@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Hi-Tech Eco Engineering — Solar Monitoring</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root{
+    --bg:#fdfaf4;
+    --panel:#ffffff;
+    --ink:#20241f;
+    --sub:#6b6a63;
+    --line:#e9e3d4;
+    --sun:#f5a623;
+    --sun-deep:#e0791a;
+    --leaf:#3f8f5c;
+    --leaf-soft:#e6f4ea;
+    --bad:#d1483f;
+    --bad-soft:#fbe6e3;
+    --stale:#8a8a82;
+    --stale-soft:#eeece3;
+    --huawei:#3f6fb0;
+    --deye:#0f9b8e;
+    --sigen:#8451c9;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Segoe UI","Noto Sans Thai",system-ui,-apple-system,sans-serif;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 32px;
+    background:linear-gradient(90deg,#1c2b21,#26382b);
+    color:#fdfaf4;
+    flex-shrink:0;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand .mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(135deg,var(--sun),var(--sun-deep));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#1c2b21;font-size:18px;
+  }
+  .brand h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .brand span{font-size:12px;color:#c9d3c8;display:block;margin-top:2px;}
+  .header-right{display:flex;align-items:center;gap:22px;}
+  #clock{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;}
+  #clock small{display:block;font-size:11px;font-weight:400;color:#c9d3c8;text-align:right;}
+  #pauseBtn{
+    border:1px solid #4d5f4c;background:#2f402f;color:#fdfaf4;
+    padding:8px 16px;border-radius:999px;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+  }
+  #pauseBtn:hover{background:#3a4d39;}
+
+  /* ---------- Problem ribbon ---------- */
+  #ribbon{
+    flex-shrink:0;
+    background:var(--bad);
+    color:#fff;
+    display:none;
+    align-items:center;
+    gap:14px;
+    padding:9px 28px;
+    font-size:14px;
+    font-weight:600;
+    overflow:hidden;
+    white-space:nowrap;
+  }
+  #ribbon.show{display:flex;}
+  #ribbon .tag{
+    background:#fff2;padding:3px 10px;border-radius:999px;font-size:12px;flex-shrink:0;
+  }
+  #ribbonTrack{display:inline-flex;gap:28px;animation:scroll 22s linear infinite;}
+  @keyframes scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  /* ---------- Main grid ---------- */
+  main{
+    flex:1;
+    padding:26px 32px 10px;
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    grid-auto-rows:1fr;
+    gap:18px;
+    overflow:hidden;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 16px 14px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    box-shadow:0 1px 3px rgba(0,0,0,.03);
+    position:relative;
+    overflow:hidden;
+  }
+  .card.issue{
+    border-color:var(--bad);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(209,72,63,.35);}
+    50%{box-shadow:0 0 0 7px rgba(209,72,63,0);}
+  }
+  .card.stale{opacity:.55;}
+  .vendor-tag{
+    position:absolute;top:0;left:0;width:5px;height:100%;
+  }
+  .vendor-tag.Huawei{background:var(--huawei);}
+  .vendor-tag.Deye{background:var(--deye);}
+  .vendor-tag.Sigen{background:var(--sigen);}
+
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+  .site-name{
+    font-size:15px;font-weight:700;line-height:1.25;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .vendor-pill{
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;
+    color:#fff;flex-shrink:0;white-space:nowrap;
+  }
+  .vendor-pill.Huawei{background:var(--huawei);}
+  .vendor-pill.Deye{background:var(--deye);}
+  .vendor-pill.Sigen{background:var(--sigen);}
+
+  .stats{display:flex;gap:10px;margin-top:10px;}
+  .stat{
+    flex:1;background:var(--leaf-soft);border-radius:12px;
+    padding:10px 10px;text-align:center;
+  }
+  .stat .val{font-size:20px;font-weight:800;color:#20402c;font-variant-numeric:tabular-nums;}
+  .stat .lbl{font-size:10px;color:#4c6952;margin-top:2px;}
+  .card.issue .stat{background:var(--bad-soft);}
+  .card.issue .stat .val{color:#7c2a24;}
+  .card.issue .stat .lbl{color:#93413a;}
+
+  .card-bottom{
+    display:flex;justify-content:space-between;align-items:center;margin-top:10px;
+  }
+  .status-pill{
+    font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;
+    display:flex;align-items:center;gap:5px;
+  }
+  .status-pill .dot{width:7px;height:7px;border-radius:50%;}
+  .status-pill.ok{background:var(--leaf-soft);color:#1f5c33;}
+  .status-pill.ok .dot{background:var(--leaf);}
+  .status-pill.issue{background:var(--bad-soft);color:#93231a;}
+  .status-pill.issue .dot{background:var(--bad);}
+  .status-pill.stale{background:var(--stale-soft);color:#55554e;}
+  .status-pill.stale .dot{background:var(--stale);}
+  .updated{font-size:10px;color:var(--sub);}
+
+  /* ---------- Footer ---------- */
+  footer{
+    flex-shrink:0;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 32px 18px;
+  }
+  .totals{display:flex;gap:26px;font-size:12px;color:var(--sub);}
+  .totals b{color:var(--ink);font-size:14px;}
+  .dots{display:flex;gap:7px;}
+  .dots span{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.25s;}
+  .dots span.active{background:var(--sun-deep);width:22px;border-radius:5px;}
+
+  #loading, #errorBox{
+    flex:1;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:10px;color:var(--sub);font-size:15px;text-align:center;padding:0 40px;
+  }
+  #errorBox{display:none;color:#93231a;}
+  #errorBox code{background:#f3ede0;padding:2px 6px;border-radius:6px;font-size:13px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark">☀</div>
+    <div>
+      <h1>Hi-Tech Eco Engineering</h1>
+      <span>Solar Monitoring — Live Overview</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div id="clock">--:--:-- <small id="dateLine">-</small></div>
+    <button id="pauseBtn">⏸ หยุดเลื่อน</button>
+  </div>
+</header>
+
+<div id="ribbon">
+  <span class="tag">ต้องตรวจสอบ</span>
+  <div id="ribbonTrack"></div>
+</div>
+
+<div id="loading">กำลังโหลดข้อมูลจาก Google Sheet…</div>
+<div id="errorBox">
+  <div>โหลดข้อมูลไม่สำเร็จ</div>
+  <div>เช็คว่าเปิด Share → General access → <code>Anyone with the link (Viewer)</code> ของ Google Sheet แล้วหรือยัง</div>
+</div>
+
+<main id="grid" style="display:none;"></main>
+
+<footer id="footerBox" style="display:none;">
+  <div class="totals">
+    <div>ไซต์ทั้งหมด <b id="totSites">0</b></div>
+    <div>กำลังผลิตรวม <b id="totPower">0</b> kW</div>
+    <div>ต้องตรวจสอบ <b id="totIssue">0</b></div>
+    <div>อัปเดตข้อมูลล่าสุด <b id="totRefresh">-</b></div>
+  </div>
+  <div class="dots" id="dots"></div>
+</footer>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SHEET_ID = "1zz5nbLT4SjKFHYWsrsR8TvVpGjgNuOLQHRDe_3ltNNU";
+const PAGE_SIZE = 10;              // การ์ดต่อหน้า (5 คอลัมน์ x 2 แถว)
+const ROTATE_MS = 30000;           // เลื่อนหน้าทุก 30 วิ
+const DATA_REFRESH_MS = 5 * 60000; // ดึงข้อมูลใหม่ทุก 5 นาที
+const STALE_MIN = 40;              // ไม่มีข้อมูลเกินกี่นาทีถือว่า "no data"
+const DAY_START_HOUR = 6;          // ถือว่าเป็น "กลางวัน" ตั้งแต่กี่โมง
+const DAY_END_HOUR = 18;
+
+function gvizUrl(sheetName){
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+}
+
+/* ============================================================
+   CSV PARSER (รองรับ quoted field ที่มี comma อยู่ข้างใน)
+   ============================================================ */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i], n = text[i+1];
+    if(inQuotes){
+      if(c === '"' && n === '"'){ field += '"'; i++; }
+      else if(c === '"'){ inQuotes = false; }
+      else{ field += c; }
+    } else {
+      if(c === '"'){ inQuotes = true; }
+      else if(c === ','){ row.push(field); field=""; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=""; }
+      else if(c === '\r'){ /* skip */ }
+      else{ field += c; }
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  if(!rows.length) return [];
+  const headers = rows[0].map(h=>h.trim());
+  return rows.slice(1).filter(r=>r.length>1 || r[0]!=="").map(r=>{
+    const o = {};
+    headers.forEach((h,idx)=> o[h] = (r[idx]!==undefined ? r[idx].trim() : ""));
+    return o;
+  });
+}
+
+async function fetchSheet(sheetName){
+  const res = await fetch(gvizUrl(sheetName));
+  if(!res.ok) throw new Error(`โหลด ${sheetName} ไม่สำเร็จ (${res.status})`);
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+function num(v){
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+/* หา timestamp ล่าสุด "ต่อ id" จากตารางที่เป็น append-only (เรียงเวลาจากเก่า->ใหม่) */
+function latestByKey(rows, keyField){
+  const map = new Map();
+  for(const r of rows){
+    if(!r[keyField]) continue;
+    map.set(r[keyField], r); // เขียนทับเรื่อยๆ แถวหลังสุดจะชนะ
+  }
+  return [...map.values()];
+}
+
+function parseTimestamp(s){
+  if(!s) return null;
+  const d = new Date(s.replace(" ", "T"));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/* ============================================================
+   โหลด + รวมข้อมูลจากทั้ง 3 ค่าย ให้เป็นรูปแบบเดียวกัน
+   { vendor, id, name, livePowerKw, dayEnergyKwh, rawStatus, lastUpdated }
+   ============================================================ */
+async function loadAllSites(){
+  const [huawei, deye, sigenInv, huaweiAlarmsRaw] = await Promise.all([
+    fetchSheet("Latest_Data"),
+    fetchSheet("Deye_Realtime_Data"),
+    fetchSheet("Sigen_Inverter_Data"),
+    fetchSheet("Huawei_Alarms").catch(() => [])   // แท็บนี้อาจยังไม่มีถ้ายังไม่เคยรัน alarm script
+  ]);
+
+  // ---- หา batch ล่าสุดของ Huawei_Alarms (timestamp_polled ล่าสุด) ----
+  // เพราะเราดึง status=1 (active เท่านั้น) ทุก poll คือ "snapshot ตอนนั้น"
+  // แถวที่มี timestamp_polled ตรงกับรอบล่าสุด = alarm ที่ active อยู่ ณ ตอนนี้
+  let latestHuaweiAlarmMap = new Map();   // stationCode -> [alarmName, ...]
+  let latestHuaweiAlarmPollTime = null;
+  if (huaweiAlarmsRaw.length){
+    const times = huaweiAlarmsRaw.map(r => parseTimestamp(r.timestamp_polled)).filter(Boolean);
+    if (times.length){
+      latestHuaweiAlarmPollTime = new Date(Math.max(...times.map(d => d.getTime())));
+      const latestStr = huaweiAlarmsRaw.reduce((max, r) => {
+        const t = parseTimestamp(r.timestamp_polled);
+        return (t && t.getTime() === latestHuaweiAlarmPollTime.getTime()) ? r.timestamp_polled : max;
+      }, null);
+      huaweiAlarmsRaw
+        .filter(r => r.timestamp_polled === latestStr)
+        .forEach(r => {
+          const key = r.stationCode;
+          if (!key) return;
+          const label = r.alarmName || "Alarm";
+          if (!latestHuaweiAlarmMap.has(key)) latestHuaweiAlarmMap.set(key, []);
+          latestHuaweiAlarmMap.get(key).push(label);
+        });
+    }
+  }
+
+  const sites = [];
+
+  // ---- Huawei: Latest_Data มีแถวเดียวต่อไซต์อยู่แล้ว ----
+  for(const r of huawei){
+    if(!r.stationCode) continue;
+    sites.push({
+      vendor:"Huawei",
+      id:r.stationCode,
+      name:r.stationName || r.stationCode,
+      livePowerKw:null, // ไม่มี field นี้ใน Latest_Data
+      dayEnergyKwh:num(r.day_power),
+      rawStatus:r.status || "",
+      lastUpdated:parseTimestamp(r.timestamp),
+      activeAlarms: latestHuaweiAlarmMap.get(r.stationCode) || [],   // alarm จริงจาก Huawei_Alarms
+      alarmPollTime: latestHuaweiAlarmPollTime
+    });
+  }
+
+  // ---- Deye: ต้องเอาแถวล่าสุดต่อ stationId (append-only) ----
+  const deyeLatest = latestByKey(deye, "stationId");
+  for(const r of deyeLatest){
+    sites.push({
+      vendor:"Deye",
+      id:r.stationId,
+      name:r.stationName || r.stationId,
+      livePowerKw:num(r.active_power_kW),
+      dayEnergyKwh:null, // Deye /station/latest ไม่มีพลังงานสะสมรายวัน
+      rawStatus:"",
+      lastUpdated:parseTimestamp(r.timestamp)
+    });
+  }
+
+  // ---- Sigen: รวมระดับ inverter ขึ้นเป็นระดับไซต์ (systemName) ----
+  const bySystem = new Map();
+  for(const r of sigenInv){
+    if(!r.systemId) continue;
+    const key = r.systemId;
+    if(!bySystem.has(key)){
+      bySystem.set(key, {
+        vendor:"Sigen", id:key, name:r.systemName || key,
+        livePowerKw:0, dayEnergyKwh:null, rawStatus:"", lastUpdated:null
+      });
+    }
+    const s = bySystem.get(key);
+    const p = num(r.pv_power_kW);
+    if(p !== null) s.livePowerKw += p;
+    const t = parseTimestamp(r.timestamp);
+    if(t && (!s.lastUpdated || t > s.lastUpdated)){
+      s.lastUpdated = t;
+      s.rawStatus = r.status || s.rawStatus;
+    }
+  }
+  sites.push(...bySystem.values());
+
+  return sites;
+}
+
+/* ============================================================
+   ตัด "ปัญหา" — heuristic จากข้อมูลที่มี (ไม่ใช่ alarm จริงของแต่ละค่าย)
+   ============================================================ */
+function evaluate(site){
+  const now = new Date();
+  const hour = now.getHours();
+  const isDaytime = hour >= DAY_START_HOUR && hour < DAY_END_HOUR;
+
+  if(!site.lastUpdated){
+    return {state:"stale", reason:"ไม่มีข้อมูล"};
+  }
+  const ageMin = (now - site.lastUpdated) / 60000;
+  if(ageMin > STALE_MIN){
+    return {state:"stale", reason:`ไม่อัปเดต ${Math.round(ageMin)} นาที`};
+  }
+
+  // ---- Huawei: ใช้ alarm จริงจาก Huawei_Alarms แทน heuristic เดา ----
+  if(site.vendor === "Huawei"){
+    if(site.activeAlarms && site.activeAlarms.length){
+      return {state:"issue", reason:site.activeAlarms.join(", ")};
+    }
+    // ไม่มี alarm active ตอนนี้ = ปกติ (ไม่ต้องเดาจาก day_power อีกแล้ว)
+    return {state:"ok", reason:""};
+  }
+
+  // ---- Deye / Sigen: ยังไม่มี alarm API จริง ใช้ heuristic ต่อไป ----
+  const statusLower = (site.rawStatus || "").toLowerCase();
+  if(statusLower.includes("fault") || statusLower.includes("alarm")){
+    return {state:"issue", reason:`สถานะ: ${site.rawStatus}`};
+  }
+
+  if(site.livePowerKw !== null){
+    if(isDaytime && site.livePowerKw < 0.05){
+      return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ตอนกลางวัน (ประเมินจากข้อมูล ไม่ใช่ alarm จริง)"};
+    }
+  } else if(site.dayEnergyKwh !== null){
+    if(hour >= 10 && site.dayEnergyKwh < 0.05){
+      return {state:"issue", reason:"ยังไม่มีผลผลิตวันนี้ (ประเมินจากข้อมูล ไม่ใช่ alarm จริง)"};
+    }
+  }
+  return {state:"ok", reason:""};
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+let PAGES = [];
+let currentPage = 0;
+let rotateTimer = null;
+let paused = false;
+let allSites = [];
+
+function fmtNum(n, digits=2){
+  return n===null || n===undefined ? "–" : n.toFixed(digits);
+}
+function relTime(d){
+  if(!d) return "-";
+  const min = Math.round((new Date() - d)/60000);
+  if(min < 1) return "เมื่อสักครู่";
+  if(min < 60) return `${min} นาทีที่แล้ว`;
+  return `${Math.round(min/60)} ชม.ที่แล้ว`;
+}
+
+function buildCard(site){
+  const ev = evaluate(site);
+  const primaryVal = site.livePowerKw !== null ? fmtNum(site.livePowerKw) : fmtNum(site.dayEnergyKwh);
+  const primaryLbl = site.livePowerKw !== null ? "กำลังไฟ (kW)" : "ผลผลิตวันนี้ (kWh)";
+  const secondaryVal = site.livePowerKw !== null ? fmtNum(site.dayEnergyKwh) : "–";
+  const secondaryLbl = site.livePowerKw !== null ? "ผลผลิตวันนี้ (kWh)" : "—";
+
+  const pillClass = ev.state === "ok" ? "ok" : ev.state === "issue" ? "issue" : "stale";
+  const pillText = ev.state === "ok" ? "ปกติ" : ev.state === "issue" ? "ต้องตรวจสอบ" : "ไม่มีข้อมูล";
+
+  const card = document.createElement("div");
+  card.className = "card" + (ev.state === "issue" ? " issue" : "") + (ev.state === "stale" ? " stale" : "");
+  card.innerHTML = `
+    <div class="vendor-tag ${site.vendor}"></div>
+    <div class="card-top">
+      <div class="site-name">${site.name}</div>
+      <div class="vendor-pill ${site.vendor}">${site.vendor}</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="val">${primaryVal}</div><div class="lbl">${primaryLbl}</div></div>
+      <div class="stat"><div class="val">${secondaryVal}</div><div class="lbl">${secondaryLbl}</div></div>
+    </div>
+    <div class="card-bottom">
+      <div class="status-pill ${pillClass}"><span class="dot"></span>${pillText}</div>
+      <div class="updated">${relTime(site.lastUpdated)}</div>
+    </div>
+  `;
+  return card;
+}
+
+function renderPage(idx){
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  const page = PAGES[idx] || [];
+  page.forEach(site => grid.appendChild(buildCard(site)));
+  document.querySelectorAll("#dots span").forEach((d,i)=>d.classList.toggle("active", i===idx));
+}
+
+function buildDots(){
+  const dots = document.getElementById("dots");
+  dots.innerHTML = "";
+  PAGES.forEach((_,i)=>{
+    const d = document.createElement("span");
+    d.onclick = ()=>{ currentPage = i; renderPage(currentPage); resetRotateTimer(); };
+    dots.appendChild(d);
+  });
+}
+
+function renderRibbon(){
+  const ribbon = document.getElementById("ribbon");
+  const track = document.getElementById("ribbonTrack");
+  const issues = allSites.map(s=>({site:s, ev:evaluate(s)})).filter(x=>x.ev.state==="issue");
+  if(!issues.length){ ribbon.classList.remove("show"); return; }
+  ribbon.classList.add("show");
+  const items = issues.map(x=>`${x.site.name} — ${x.ev.reason}`);
+  const doubled = [...items, ...items]; // ให้ scroll วนลื่นๆ
+  track.innerHTML = doubled.map(t=>`<span>${t}</span>`).join("");
+}
+
+function renderFooter(){
+  const totalPower = allSites.reduce((a,s)=> a + (s.livePowerKw || 0), 0);
+  const issueCount = allSites.filter(s=>evaluate(s).state==="issue").length;
+  document.getElementById("totSites").textContent = allSites.length;
+  document.getElementById("totPower").textContent = totalPower.toFixed(1);
+  document.getElementById("totIssue").textContent = issueCount;
+  document.getElementById("totRefresh").textContent = new Date().toLocaleTimeString("th-TH");
+}
+
+function paginate(){
+  PAGES = [];
+  for(let i=0;i<allSites.length;i+=PAGE_SIZE){
+    PAGES.push(allSites.slice(i, i+PAGE_SIZE));
+  }
+  if(!PAGES.length) PAGES = [[]];
+  currentPage = Math.min(currentPage, PAGES.length-1);
+}
+
+function resetRotateTimer(){
+  clearInterval(rotateTimer);
+  if(paused) return;
+  rotateTimer = setInterval(()=>{
+    currentPage = (currentPage+1) % PAGES.length;
+    renderPage(currentPage);
+  }, ROTATE_MS);
+}
+
+document.getElementById("pauseBtn").addEventListener("click", ()=>{
+  paused = !paused;
+  document.getElementById("pauseBtn").textContent = paused ? "▶ เล่นต่อ" : "⏸ หยุดเลื่อน";
+  resetRotateTimer();
+});
+
+/* ============================================================
+   CLOCK
+   ============================================================ */
+function tickClock(){
+  const now = new Date();
+  document.getElementById("clock").innerHTML =
+    now.toLocaleTimeString("th-TH") +
+    `<small>${now.toLocaleDateString("th-TH", {weekday:"long", day:"numeric", month:"long", year:"numeric"})}</small>`;
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+/* ============================================================
+   MAIN LOAD LOOP
+   ============================================================ */
+async function refreshData(){
+  try{
+    allSites = await loadAllSites();
+    allSites.sort((a,b)=>{
+      const ea = evaluate(a).state, eb = evaluate(b).state;
+      const rank = s => s==="issue" ? 0 : s==="stale" ? 1 : 2;
+      if(rank(ea) !== rank(eb)) return rank(ea)-rank(eb);
+      return a.name.localeCompare(b.name, "th");
+    });
+    paginate();
+    buildDots();
+    renderPage(currentPage);
+    renderRibbon();
+    renderFooter();
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("errorBox").style.display = "none";
+    document.getElementById("grid").style.display = "grid";
+    document.getElementById("footerBox").style.display = "flex";
+    resetRotateTimer();
+  }catch(err){
+    console.error(err);
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("grid").style.display = "none";
+    document.getElementById("footerBox").style.display = "none";
+    document.getElementById("errorBox").style.display = "flex";
+  }
+}
+
+refreshData();
+setInterval(refreshData, DATA_REFRESH_MS);
+</script>
+</body>
+</html>
