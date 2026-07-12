@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <title>HI-TECH ECO ENERGY — Solar Monitoring</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ระบบมอนิเตอร์พลังงานโซลาร์แบบเรียลไทม์ของ Hi-Tech Eco Energy ดูกำลังผลิต สถานะ และแจ้งเตือนของทุกไซต์ในเครือได้ในหน้าเดียว">
+<meta property="og:title" content="HI-TECH ECO ENERGY — Solar Monitoring">
+<meta property="og:description" content="ระบบมอนิเตอร์พลังงานโซลาร์แบบเรียลไทม์ — ดูกำลังผลิต สถานะ และแจ้งเตือนของทุกไซต์ในเครือได้ในหน้าเดียว">
+<meta property="og:type" content="website">
 <style>
   :root{
     --bg:#fffaf2;
@@ -258,6 +262,42 @@
   }
   .heuristic-note{
     background:var(--stale-soft);color:#6b6b6f;border-radius:14px;padding:12px 14px;font-size:11.5px;margin-top:10px;line-height:1.5;
+  }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width:700px){
+    body{overflow-y:auto;height:auto;min-height:100vh;}
+    header{flex-direction:column;align-items:flex-start;gap:10px;padding:18px 18px 12px;}
+    .header-right{width:100%;justify-content:space-between;}
+    .brand h1{font-size:17px;}
+    #clock{font-size:15px;}
+    #pauseBtn{display:none;}
+    #ribbon{margin:0 18px 8px;padding:9px 16px;font-size:12px;border-radius:12px;}
+    #loading,#errorBox{padding:40px 24px;font-size:14px;text-align:center;}
+    main{
+      grid-template-columns:repeat(2,1fr);
+      grid-auto-rows:auto;
+      padding:6px 18px 12px;
+      overflow:visible;
+      gap:12px;
+    }
+    .card{padding:14px 14px 12px;}
+    .card:hover{transform:none;}
+    .site-name{font-size:14px;}
+    .vendor-label{font-size:10px;}
+    .stats{gap:8px;}
+    .stat{padding:9px 6px;}
+    .stat .val{font-size:15px;}
+    .stat .lbl{font-size:9px;}
+    .status-pill{font-size:10px;padding:4px 8px;}
+    .updated{font-size:9px;}
+    footer{flex-direction:column;align-items:flex-start;gap:10px;padding:14px 18px 26px;}
+    .totals{flex-wrap:wrap;gap:12px 18px;}
+    .dots{display:none;}
+    #modalOverlay{padding:14px;}
+    #modalBox{padding:22px 18px;max-height:92vh;border-radius:20px;}
+    .modal-header h2{font-size:17px;}
+    .modal-stats .stat{flex:1 1 100px;}
   }
 </style>
 </head>
@@ -698,10 +738,18 @@ function renderFooter(){
   document.getElementById("totRefresh").textContent = new Date().toLocaleTimeString("th-TH");
 }
 
+function isMobileView(){
+  return window.matchMedia("(max-width:700px)").matches;
+}
+
 function paginate(){
-  PAGES = [];
-  for(let i=0;i<allSites.length;i+=PAGE_SIZE){
-    PAGES.push(allSites.slice(i, i+PAGE_SIZE));
+  if(isMobileView()){
+    PAGES = [allSites];
+  } else {
+    PAGES = [];
+    for(let i=0;i<allSites.length;i+=PAGE_SIZE){
+      PAGES.push(allSites.slice(i, i+PAGE_SIZE));
+    }
   }
   if(!PAGES.length) PAGES = [[]];
   currentPage = Math.min(currentPage, PAGES.length-1);
@@ -709,7 +757,7 @@ function paginate(){
 
 function resetRotateTimer(){
   clearInterval(rotateTimer);
-  if(paused) return;
+  if(paused || isMobileView() || PAGES.length <= 1) return;
   rotateTimer = setInterval(()=>{
     currentPage = (currentPage+1) % PAGES.length;
     renderPage(currentPage);
@@ -903,6 +951,18 @@ async function refreshData(){
 
 refreshData();
 setInterval(refreshData, DATA_REFRESH_MS);
+
+let resizeTimer;
+window.addEventListener("resize", ()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(()=>{
+    if(!allSites.length) return;
+    paginate();
+    buildDots();
+    renderPage(currentPage);
+    resetRotateTimer();
+  }, 250);
+});
 </script>
 </body>
 </html>
