@@ -6,34 +6,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   :root{
-    --bg:#fdfaf4;
+    --bg:#fffaf2;
     --panel:#ffffff;
-    --ink:#20241f;
-    --sub:#6b6a63;
-    --line:#e9e3d4;
-    --sun:#f5a623;
-    --sun-deep:#e0791a;
-    --leaf:#3f8f5c;
-    --leaf-soft:#e6f4ea;
-    --bad:#d1483f;
-    --bad-soft:#fbe6e3;
-    --stale:#8a8a82;
-    --stale-soft:#eeece3;
-    --huawei:#3f6fb0;
-    --deye:#0f9b8e;
-    --sigen:#8451c9;
+    --ink:#1c1c1e;
+    --sub:#8a8a8e;
+    --line:#f1e9d8;
+    --orange:#ff7a1a;
+    --orange-deep:#e85d04;
+    --yellow:#ffc94a;
+    --yellow-soft:#fff3d6;
+    --amber-soft:#fff1de;
+    --ok:#2fb35d;
+    --ok-soft:#e6f7ec;
+    --issue:#ff4d3d;
+    --issue-soft:#ffe9e5;
+    --stale:#9a9a9e;
+    --stale-soft:#f2f0eb;
+    --v-huawei:#ff7a1a;
+    --v-deye:#ffab00;
+    --v-sigen:#e85d04;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
-    background:var(--bg);
+    background:
+      radial-gradient(1100px 500px at 8% -10%, #fff1d4 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #ffe3c9 0%, transparent 55%),
+      var(--bg);
     color:var(--ink);
-    font-family:"Segoe UI","Noto Sans Thai",system-ui,-apple-system,sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI","Noto Sans Thai",sans-serif;
     overflow:hidden;
     display:flex;
     flex-direction:column;
     height:100vh;
+    -webkit-font-smoothing:antialiased;
   }
 
   /* ---------- Header ---------- */
@@ -41,113 +48,119 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:18px 32px;
-    background:linear-gradient(90deg,#1c2b21,#26382b);
-    color:#fdfaf4;
+    padding:20px 34px 16px;
     flex-shrink:0;
   }
-  .brand h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.3px;}
-  .brand span{font-size:12px;color:#c9d3c8;display:block;margin-top:2px;}
-  .header-right{display:flex;align-items:center;gap:22px;}
-  #clock{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;}
-  #clock small{display:block;font-size:11px;font-weight:400;color:#c9d3c8;text-align:right;}
-  #pauseBtn{
-    border:1px solid #4d5f4c;background:#2f402f;color:#fdfaf4;
-    padding:8px 16px;border-radius:999px;font-size:13px;cursor:pointer;
-    display:flex;align-items:center;gap:6px;
+  .brand{display:flex;align-items:center;gap:14px;}
+  .sunmark{
+    width:40px;height:40px;border-radius:14px;flex-shrink:0;
+    background:radial-gradient(circle at 32% 28%, #ffe08a 0%, var(--orange) 55%, var(--orange-deep) 100%);
+    box-shadow:0 4px 14px rgba(232,93,4,.35);
   }
-  #pauseBtn:hover{background:#3a4d39;}
+  .brand h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.2px;color:var(--ink);}
+  .brand span{font-size:12px;color:var(--sub);display:block;margin-top:2px;font-weight:500;}
+  .header-right{display:flex;align-items:center;gap:16px;}
+  #clock{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;color:var(--ink);}
+  #clock small{display:block;font-size:11px;font-weight:500;color:var(--sub);margin-top:1px;}
+  #pauseBtn{
+    border:none;
+    background:linear-gradient(135deg,var(--orange),var(--orange-deep));
+    color:#fff;
+    padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+    box-shadow:0 4px 12px rgba(232,93,4,.28);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  #pauseBtn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(232,93,4,.35);}
 
   /* ---------- Problem ribbon ---------- */
   #ribbon{
     flex-shrink:0;
-    background:var(--bad);
+    background:linear-gradient(90deg,#ff5a45,#ff8a3d);
     color:#fff;
     display:none;
     align-items:center;
     gap:14px;
-    padding:9px 28px;
-    font-size:14px;
+    margin:0 34px 4px;
+    padding:10px 20px;
+    border-radius:14px;
+    font-size:13.5px;
     font-weight:600;
     overflow:hidden;
     white-space:nowrap;
+    box-shadow:0 6px 16px rgba(255,90,69,.25);
   }
   #ribbon.show{display:flex;}
   #ribbon .tag{
-    background:#fff2;padding:3px 10px;border-radius:999px;font-size:12px;flex-shrink:0;
+    background:rgba(255,255,255,.25);padding:3px 12px;border-radius:999px;font-size:11.5px;flex-shrink:0;
   }
-  #ribbonTrack{display:inline-flex;gap:28px;animation:scroll 22s linear infinite;}
-  #ribbonTrack span{cursor:pointer;text-decoration:underline;text-decoration-color:#fff6;text-underline-offset:3px;}
+  #ribbonTrack{display:inline-flex;gap:30px;animation:scroll 22s linear infinite;}
+  #ribbonTrack span{cursor:pointer;text-decoration:underline;text-decoration-color:rgba(255,255,255,.45);text-underline-offset:3px;}
   #ribbonTrack span:hover{text-decoration-color:#fff;}
   @keyframes scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
 
   /* ---------- Main grid ---------- */
   main{
     flex:1;
-    padding:26px 32px 10px;
+    padding:14px 34px 6px;
     display:grid;
     grid-template-columns:repeat(5,1fr);
     grid-auto-rows:1fr;
-    gap:18px;
+    gap:16px;
     overflow:hidden;
   }
   .card{
     background:var(--panel);
     border:1px solid var(--line);
-    border-radius:16px;
-    padding:16px 16px 14px;
+    border-radius:20px;
+    padding:16px 16px 13px;
     display:flex;
     flex-direction:column;
     justify-content:space-between;
-    box-shadow:0 1px 3px rgba(0,0,0,.03);
+    box-shadow:0 1px 2px rgba(30,20,0,.03), 0 8px 18px rgba(30,20,0,.02);
     position:relative;
     overflow:hidden;
     cursor:pointer;
     transition:transform .15s ease, box-shadow .15s ease;
   }
   .card:hover{
-    transform:translateY(-2px);
-    box-shadow:0 6px 16px rgba(0,0,0,.08);
+    transform:translateY(-3px);
+    box-shadow:0 10px 26px rgba(30,20,0,.09);
   }
   .card.issue{
-    border-color:var(--bad);
-    animation:pulse 1.8s ease-in-out infinite;
+    border-color:#ffcec5;
+    animation:pulse 2s ease-in-out infinite;
   }
   @keyframes pulse{
-    0%,100%{box-shadow:0 0 0 0 rgba(209,72,63,.35);}
-    50%{box-shadow:0 0 0 7px rgba(209,72,63,0);}
+    0%,100%{box-shadow:0 0 0 0 rgba(255,77,61,.28);}
+    50%{box-shadow:0 0 0 8px rgba(255,77,61,0);}
   }
-  .card.stale{opacity:.55;}
-  .vendor-tag{
-    position:absolute;top:0;left:0;width:5px;height:100%;
+  .card.muted{opacity:.6;}
+  .vendor-dot{
+    position:absolute;top:16px;right:16px;width:8px;height:8px;border-radius:50%;
   }
-  .vendor-tag.Huawei{background:var(--huawei);}
-  .vendor-tag.Deye{background:var(--deye);}
-  .vendor-tag.Sigen{background:var(--sigen);}
+  .vendor-dot.Huawei{background:var(--v-huawei);}
+  .vendor-dot.Deye{background:var(--v-deye);}
+  .vendor-dot.Sigen{background:var(--v-sigen);}
 
-  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+  .card-top{padding-right:16px;}
   .site-name{
-    font-size:15px;font-weight:700;line-height:1.25;
+    font-size:15px;font-weight:700;line-height:1.28;color:var(--ink);
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   }
-  .vendor-pill{
-    font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;
-    color:#fff;flex-shrink:0;white-space:nowrap;
-  }
-  .vendor-pill.Huawei{background:var(--huawei);}
-  .vendor-pill.Deye{background:var(--deye);}
-  .vendor-pill.Sigen{background:var(--sigen);}
+  .vendor-label{font-size:11px;font-weight:600;color:var(--sub);margin-top:3px;}
 
   .stats{display:flex;gap:10px;margin-top:10px;}
   .stat{
-    flex:1;background:var(--leaf-soft);border-radius:12px;
-    padding:10px 10px;text-align:center;
+    flex:1;background:var(--amber-soft);border-radius:14px;
+    padding:11px 10px;text-align:center;
+    min-width:0;
   }
-  .stat .val{font-size:20px;font-weight:800;color:#20402c;font-variant-numeric:tabular-nums;}
-  .stat .lbl{font-size:10px;color:#4c6952;margin-top:2px;}
-  .card.issue .stat{background:var(--bad-soft);}
-  .card.issue .stat .val{color:#7c2a24;}
-  .card.issue .stat .lbl{color:#93413a;}
+  .stat .val{font-size:19px;font-weight:800;color:#7a4400;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stat .lbl{font-size:10px;color:#a8752e;margin-top:2px;font-weight:600;}
+  .card.issue .stat{background:var(--issue-soft);}
+  .card.issue .stat .val{color:#a8281c;}
+  .card.issue .stat .lbl{color:#c14d40;}
 
   .card-bottom{
     display:flex;justify-content:space-between;align-items:center;margin-top:10px;
@@ -157,66 +170,89 @@
     display:flex;align-items:center;gap:5px;
   }
   .status-pill .dot{width:7px;height:7px;border-radius:50%;}
-  .status-pill.ok{background:var(--leaf-soft);color:#1f5c33;}
-  .status-pill.ok .dot{background:var(--leaf);}
-  .status-pill.issue{background:var(--bad-soft);color:#93231a;}
-  .status-pill.issue .dot{background:var(--bad);}
-  .status-pill.stale{background:var(--stale-soft);color:#55554e;}
+  .status-pill.ok{background:var(--ok-soft);color:#186b38;}
+  .status-pill.ok .dot{background:var(--ok);}
+  .status-pill.issue{background:var(--issue-soft);color:#a8281c;}
+  .status-pill.issue .dot{background:var(--issue);}
+  .status-pill.stale{background:var(--stale-soft);color:#6b6b6f;}
   .status-pill.stale .dot{background:var(--stale);}
-  .updated{font-size:10px;color:var(--sub);}
+  .updated{font-size:10px;color:var(--sub);font-weight:500;}
 
   /* ---------- Footer ---------- */
   footer{
     flex-shrink:0;
     display:flex;justify-content:space-between;align-items:center;
-    padding:12px 32px 18px;
+    padding:12px 34px 20px;
   }
-  .totals{display:flex;gap:26px;font-size:12px;color:var(--sub);}
-  .totals b{color:var(--ink);font-size:14px;}
+  .totals{display:flex;gap:24px;font-size:12px;color:var(--sub);font-weight:500;}
+  .totals b{color:var(--ink);font-size:14px;font-weight:700;}
   .dots{display:flex;gap:7px;}
   .dots span{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.25s;cursor:pointer;}
-  .dots span.active{background:var(--sun-deep);width:22px;border-radius:5px;}
+  .dots span.active{background:var(--orange);width:22px;border-radius:5px;}
 
   #loading, #errorBox{
     flex:1;display:flex;align-items:center;justify-content:center;
     flex-direction:column;gap:10px;color:var(--sub);font-size:15px;text-align:center;padding:0 40px;
   }
-  #errorBox{display:none;color:#93231a;}
-  #errorBox code{background:#f3ede0;padding:2px 6px;border-radius:6px;font-size:13px;}
+  #errorBox{display:none;color:#a8281c;}
+  #errorBox code{background:var(--yellow-soft);padding:2px 6px;border-radius:6px;font-size:13px;}
 
   /* ---------- Detail modal ---------- */
   #modalOverlay{
-    display:none;position:fixed;inset:0;background:rgba(20,24,20,.55);
+    display:none;position:fixed;inset:0;background:rgba(30,22,10,.45);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
     z-index:50;align-items:center;justify-content:center;padding:30px;
   }
   #modalOverlay.show{display:flex;}
   #modalBox{
-    background:var(--panel);border-radius:18px;max-width:640px;width:100%;
-    max-height:85vh;overflow-y:auto;padding:26px 28px;position:relative;
-    box-shadow:0 20px 50px rgba(0,0,0,.25);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-radius:24px;max-width:680px;width:100%;
+    max-height:86vh;overflow-y:auto;padding:28px 30px;position:relative;
+    box-shadow:0 24px 60px rgba(40,25,0,.25);
+    border:1px solid rgba(255,255,255,.6);
   }
   #modalClose{
-    position:absolute;top:16px;right:16px;background:var(--stale-soft);border:none;
-    width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--sub);
+    position:absolute;top:18px;right:18px;background:var(--stale-soft);border:none;
+    width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--sub);
+    transition:background .12s ease;
   }
   #modalClose:hover{background:var(--line);}
-  .modal-header{display:flex;align-items:center;gap:10px;margin-bottom:4px;padding-right:36px;}
-  .modal-header h2{font-size:19px;margin:0;}
-  .modal-sub{font-size:12px;color:var(--sub);margin-bottom:18px;}
-  .modal-stats{display:flex;gap:12px;margin-bottom:18px;}
-  .modal-stats .stat{flex:1;}
-  .modal-section-title{font-size:13px;font-weight:700;color:var(--sub);margin:18px 0 8px;text-transform:uppercase;letter-spacing:.4px;}
-  .alarm-card{
-    background:var(--bad-soft);border-radius:12px;padding:14px 16px;margin-bottom:10px;
+  .modal-header{display:flex;align-items:center;gap:10px;margin-bottom:4px;padding-right:40px;}
+  .modal-header h2{font-size:20px;margin:0;font-weight:800;}
+  .vendor-chip{
+    font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:#fff;flex-shrink:0;
   }
-  .alarm-card .aname{font-weight:700;color:#7c2a24;font-size:14px;margin-bottom:4px;}
-  .alarm-card .arow{font-size:12px;color:#5c2a24;margin-top:6px;line-height:1.5;}
-  .alarm-card .arow b{color:#3f1a16;}
+  .vendor-chip.Huawei{background:var(--v-huawei);}
+  .vendor-chip.Deye{background:var(--v-deye);}
+  .vendor-chip.Sigen{background:var(--v-sigen);}
+  .modal-sub{font-size:12px;color:var(--sub);margin-bottom:18px;font-weight:500;}
+  .modal-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+  .modal-stats .stat{flex:1 1 130px;}
+  .modal-section-title{font-size:12px;font-weight:700;color:var(--sub);margin:20px 0 8px;text-transform:uppercase;letter-spacing:.5px;}
+  .detail-rows{display:flex;flex-direction:column;gap:1px;background:var(--line);border-radius:14px;overflow:hidden;}
+  .detail-row{
+    display:flex;justify-content:space-between;padding:11px 14px;background:var(--panel);font-size:13px;
+  }
+  .detail-row .k{color:var(--sub);font-weight:500;}
+  .detail-row .v{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .device-card{
+    background:var(--amber-soft);border-radius:14px;padding:12px 14px;margin-bottom:8px;font-size:12.5px;
+  }
+  .device-card .dname{font-weight:700;color:#7a4400;margin-bottom:5px;font-size:13px;}
+  .device-card .drow{display:flex;justify-content:space-between;color:#8a6224;padding:2px 0;}
+  .device-card .drow b{color:#5c4114;}
+  .alarm-card{
+    background:var(--issue-soft);border-radius:14px;padding:14px 16px;margin-bottom:10px;
+  }
+  .alarm-card .aname{font-weight:700;color:#a8281c;font-size:14px;margin-bottom:4px;}
+  .alarm-card .arow{font-size:12px;color:#7a3a30;margin-top:6px;line-height:1.5;}
+  .alarm-card .arow b{color:#5c2a20;}
   .no-alarm-note{
-    background:var(--leaf-soft);color:#1f5c33;border-radius:12px;padding:14px 16px;font-size:13px;
+    background:var(--ok-soft);color:#186b38;border-radius:14px;padding:14px 16px;font-size:13px;font-weight:500;
   }
   .heuristic-note{
-    background:var(--stale-soft);color:#55554e;border-radius:12px;padding:12px 14px;font-size:12px;margin-top:10px;
+    background:var(--stale-soft);color:#6b6b6f;border-radius:14px;padding:12px 14px;font-size:11.5px;margin-top:10px;line-height:1.5;
   }
 </style>
 </head>
@@ -224,8 +260,11 @@
 
 <header>
   <div class="brand">
-    <h1>HI-TECH ECO ENERGY</h1>
-    <span>Solar Monitoring — Live Overview</span>
+    <div class="sunmark"></div>
+    <div>
+      <h1>HI-TECH ECO ENERGY</h1>
+      <span>Solar Monitoring — Live Overview</span>
+    </div>
   </div>
   <div class="header-right">
     <div id="clock">--:--:-- <small id="dateLine">-</small></div>
@@ -251,7 +290,8 @@
     <div>ไซต์ทั้งหมด <b id="totSites">0</b></div>
     <div>กำลังผลิตรวม <b id="totPower">0</b> kW</div>
     <div>ต้องตรวจสอบ <b id="totIssue">0</b></div>
-    <div>อัปเดตข้อมูลล่าสุด <b id="totRefresh">-</b></div>
+    <div>ข้อมูลล่าช้า <b id="totStale">0</b></div>
+    <div>อัปเดตล่าสุด <b id="totRefresh">-</b></div>
   </div>
   <div class="dots" id="dots"></div>
 </footer>
@@ -271,7 +311,7 @@ const SHEET_ID = "1zz5nbLT4SjKFHYWsrsR8TvVpGjgNuOLQHRDe_3ltNNU";
 const PAGE_SIZE = 10;
 const ROTATE_MS = 30000;
 const DATA_REFRESH_MS = 5 * 60000;
-const STALE_MIN = 40;
+const STALE_MIN = 35;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 18;
 
@@ -317,6 +357,7 @@ async function fetchSheet(sheetName){
 }
 
 function num(v){
+  if(v === undefined || v === null || v === "") return null;
   const n = parseFloat(v);
   return isNaN(n) ? null : n;
 }
@@ -337,18 +378,33 @@ function parseTimestamp(s){
 }
 
 /* ============================================================
-   โหลดและรวมข้อมูล
+   โหลดและรวมข้อมูลทุกแหล่ง
    ============================================================ */
 async function loadAllSites(){
-  const [huawei, deye, sigenInv, huaweiAlarmsRaw] = await Promise.all([
+  const [
+    huaweiLatest, huaweiStations, huaweiAlarmsRaw,
+    deyeAll, deyeStations,
+    sigenInvAll, sigenRealtimeAll, sigenStations
+  ] = await Promise.all([
     fetchSheet("Latest_Data"),
+    fetchSheet("Station_List").catch(()=>[]),
+    fetchSheet("Huawei_Alarms").catch(() => []),
     fetchSheet("Deye_Realtime_Data"),
+    fetchSheet("Deye_Station_List").catch(()=>[]),
     fetchSheet("Sigen_Inverter_Data"),
-    fetchSheet("Huawei_Alarms").catch(() => [])
+    fetchSheet("Sigen_Realtime_Data").catch(()=>[]),
+    fetchSheet("Sigen_Station_List").catch(()=>[])
   ]);
 
-  // ---- หา batch ล่าสุดของ Huawei_Alarms พร้อมรายละเอียดเต็ม (ไม่ใช่แค่ชื่อ) ----
-  let latestHuaweiAlarmMap = new Map();   // stationCode -> [{name, device, severity, occurTime, cause, suggestion}, ...]
+  // ---- capacity lookup maps ----
+  const huaweiCapMap = new Map(huaweiStations.map(r => [r.stationCode, num(r["capacity (kW)"])]));
+  const deyeCapMap = new Map(deyeStations.map(r => [r.stationId, num(r.capacity_kW)]));
+  const sigenCapMap = new Map(sigenStations.map(r => [r.systemId, {
+    pv: num(r.pv_capacity_kW), battery: num(r.battery_capacity)
+  }]));
+
+  // ---- Huawei active alarms (latest polling batch, full detail) ----
+  let latestHuaweiAlarmMap = new Map();
   if (huaweiAlarmsRaw.length){
     const times = huaweiAlarmsRaw.map(r => parseTimestamp(r.timestamp_polled)).filter(Boolean);
     if (times.length){
@@ -369,66 +425,113 @@ async function loadAllSites(){
             device: r.deviceName || "",
             severity: r.alarmSeverity || "",
             occurTime: r.occurTime || "",
-            cause: r.alarmCause || "",
-            suggestion: r.repairSuggestion || ""
+            cause: r.raw_json ? tryExtractCause(r.raw_json) : ""
           });
         });
     }
+  }
+  function tryExtractCause(raw){
+    try{
+      const m = raw.match(/"alarmCause"\s*:\s*"([^"]*)"/);
+      return m ? m[1] : "";
+    }catch(e){ return ""; }
   }
 
   const sites = [];
 
   // ---- Huawei ----
-  for(const r of huawei){
+  for(const r of huaweiLatest){
     if(!r.stationCode) continue;
     sites.push({
       vendor:"Huawei",
       id:r.stationCode,
       name:r.stationName || r.stationCode,
-      livePowerKw:null,
-      dayEnergyKwh:num(r.day_power),
-      rawStatus:r.status || "",
       lastUpdated:parseTimestamp(r.timestamp),
-      activeAlarms: latestHuaweiAlarmMap.get(r.stationCode) || []
+      activeAlarms: latestHuaweiAlarmMap.get(r.stationCode) || [],
+      capacityKw: huaweiCapMap.get(r.stationCode) ?? null,
+      metrics:{
+        dayPower: num(r.day_power),
+        monthPower: num(r.month_power),
+        totalPower: num(r.total_power),
+        dayUse: num(r.day_use),
+        dayGrid: num(r.day_grid),
+        dayIncome: num(r.day_income),
+        totalIncome: num(r.total_income),
+        savedCost: num(r.saved_cost)
+      },
+      livePowerKw:null
     });
   }
 
   // ---- Deye ----
-  const deyeLatest = latestByKey(deye, "stationId");
+  const deyeLatest = latestByKey(deyeAll, "stationId");
   for(const r of deyeLatest){
     sites.push({
       vendor:"Deye",
       id:r.stationId,
       name:r.stationName || r.stationId,
-      livePowerKw:num(r.active_power_kW),
-      dayEnergyKwh:null,
-      rawStatus:"",
       lastUpdated:parseTimestamp(r.timestamp),
-      activeAlarms: []
+      activeAlarms: [],
+      capacityKw: deyeCapMap.get(r.stationId) ?? null,
+      livePowerKw: num(r.active_power_kW),
+      metrics:{
+        activePower: num(r.active_power_kW),
+        consumptionPower: num(r.consumption_power_kW),
+        wirePower: num(r.wire_power_kW),
+        batteryPower: num(r.battery_power_kW),
+        batterySoc: num(r.battery_soc_pct)
+      }
     });
   }
 
-  // ---- Sigen ----
+  // ---- Sigen: aggregate live power across devices per systemId ----
+  const sigenRealtimeLatest = latestByKey(sigenRealtimeAll, "systemId");
+  const sigenRealtimeMap = new Map(sigenRealtimeLatest.map(r => [r.systemId, r]));
+
   const bySystem = new Map();
-  for(const r of sigenInv){
+  for(const r of sigenInvAll){
     if(!r.systemId) continue;
     const key = r.systemId;
     if(!bySystem.has(key)){
       bySystem.set(key, {
         vendor:"Sigen", id:key, name:r.systemName || key,
-        livePowerKw:0, dayEnergyKwh:null, rawStatus:"", lastUpdated:null, activeAlarms: []
+        livePowerKw:0, lastUpdated:null, activeAlarms: [], devices:[],
+        capacityKw: (sigenCapMap.get(key)||{}).pv ?? null,
+        metrics:{}
       });
     }
     const s = bySystem.get(key);
     const p = num(r.pv_power_kW);
     if(p !== null) s.livePowerKw += p;
     const t = parseTimestamp(r.timestamp);
-    if(t && (!s.lastUpdated || t > s.lastUpdated)){
-      s.lastUpdated = t;
-      s.rawStatus = r.status || s.rawStatus;
-    }
+    if(t && (!s.lastUpdated || t > s.lastUpdated)) s.lastUpdated = t;
+    s.devices.push({
+      type:r.deviceType || "Device",
+      status:r.status || "",
+      activePower:num(r.active_power_kW),
+      pvPower:num(r.pv_power_kW),
+      reactivePower:num(r.reactive_power_kW),
+      powerFactor:num(r.power_factor),
+      gridFreq:num(r.grid_frequency_Hz),
+      temp:num(r.internal_temperature_C)
+    });
   }
-  sites.push(...bySystem.values());
+  for(const [key, s] of bySystem){
+    const rt = sigenRealtimeMap.get(key);
+    if(rt){
+      s.metrics = {
+        dayEnergy: num(rt.daily_power_generation_kWh),
+        monthEnergy: num(rt.monthly_power_generation),
+        annualEnergy: num(rt.annual_power_generation),
+        lifetimeEnergy: num(rt.lifetime_power_generation),
+        lifetimeCo2: num(rt.lifetime_co2_ton),
+        lifetimeTree: num(rt.lifetime_tree_equivalent)
+      };
+    }
+    const cap = sigenCapMap.get(key) || {};
+    s.batteryCapacityKw = cap.battery ?? null;
+    sites.push(s);
+  }
 
   return sites;
 }
@@ -442,49 +545,56 @@ function evaluate(site){
   const isDaytime = hour >= DAY_START_HOUR && hour < DAY_END_HOUR;
 
   if(!site.lastUpdated){
-    return {state:"stale", reason:"ไม่มีข้อมูล", isReal:true};
+    return {state:"nodata", reason:"ไม่มีข้อมูล"};
   }
   const ageMin = (now - site.lastUpdated) / 60000;
   if(ageMin > STALE_MIN){
-    return {state:"stale", reason:`ไม่อัปเดต ${Math.round(ageMin)} นาที`, isReal:true};
+    return {state:"stale", reason:`ข้อมูลล่าช้า ${Math.round(ageMin)} นาที`};
   }
 
   if(site.vendor === "Huawei"){
     if(site.activeAlarms && site.activeAlarms.length){
       const names = site.activeAlarms.map(a=>a.name).join(", ");
-      return {state:"issue", reason:names, isReal:true};
+      return {state:"issue", reason:names};
     }
-    return {state:"ok", reason:"", isReal:true};
+    return {state:"ok", reason:""};
   }
 
-  const statusLower = (site.rawStatus || "").toLowerCase();
-  if(statusLower.includes("fault") || statusLower.includes("alarm")){
-    return {state:"issue", reason:`สถานะ: ${site.rawStatus}`, isReal:false};
+  const raw = (site.devices ? site.devices.map(d=>d.status).join(" ") : (site.metrics.status||"")).toLowerCase();
+  if(raw.includes("fault") || raw.includes("alarm")){
+    return {state:"issue", reason:"สถานะผิดปกติ"};
   }
   if(site.livePowerKw !== null){
     if(isDaytime && site.livePowerKw < 0.05){
-      return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ตอนกลางวัน", isReal:false};
-    }
-  } else if(site.dayEnergyKwh !== null){
-    if(hour >= 10 && site.dayEnergyKwh < 0.05){
-      return {state:"issue", reason:"ยังไม่มีผลผลิตวันนี้", isReal:false};
+      return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ตอนกลางวัน"};
     }
   }
-  return {state:"ok", reason:"", isReal:false};
+  return {state:"ok", reason:""};
 }
 
 /* ============================================================
-   RENDER
+   สร้างสถิติสำหรับการ์ดหลัก (เฉพาะที่มีข้อมูลจริง)
    ============================================================ */
-let PAGES = [];
-let currentPage = 0;
-let rotateTimer = null;
-let paused = false;
-let allSites = [];
-
 function fmtNum(n, digits=2){
-  return n===null || n===undefined ? "–" : n.toFixed(digits);
+  if(n===null || n===undefined) return null;
+  return n.toFixed(digits);
 }
+
+function cardStats(site){
+  const list = [];
+  if(site.vendor === "Huawei"){
+    if(site.metrics.dayPower !== null) list.push({label:"ผลผลิตวันนี้", val:fmtNum(site.metrics.dayPower,1), unit:"kWh"});
+    if(site.metrics.savedCost !== null && site.metrics.savedCost > 0) list.push({label:"ประหยัดวันนี้", val:fmtNum(site.metrics.savedCost,0), unit:"บาท"});
+  } else if(site.vendor === "Deye"){
+    if(site.livePowerKw !== null) list.push({label:"กำลังไฟ", val:fmtNum(site.livePowerKw,2), unit:"kW"});
+    if(site.metrics.batterySoc !== null) list.push({label:"แบตเตอรี่", val:fmtNum(site.metrics.batterySoc,0), unit:"%"});
+  } else if(site.vendor === "Sigen"){
+    if(site.livePowerKw !== null) list.push({label:"กำลังไฟ", val:fmtNum(site.livePowerKw,2), unit:"kW"});
+    if(site.metrics.dayEnergy !== null) list.push({label:"ผลผลิตวันนี้", val:fmtNum(site.metrics.dayEnergy,1), unit:"kWh"});
+  }
+  return list.slice(0,2);
+}
+
 function relTime(d){
   if(!d) return "-";
   const min = Math.round((new Date() - d)/60000);
@@ -493,28 +603,34 @@ function relTime(d){
   return `${Math.round(min/60)} ชม.ที่แล้ว`;
 }
 
+/* ============================================================
+   RENDER — GRID
+   ============================================================ */
+let PAGES = [];
+let currentPage = 0;
+let rotateTimer = null;
+let paused = false;
+let allSites = [];
+
 function buildCard(site){
   const ev = evaluate(site);
-  const primaryVal = site.livePowerKw !== null ? fmtNum(site.livePowerKw) : fmtNum(site.dayEnergyKwh);
-  const primaryLbl = site.livePowerKw !== null ? "กำลังไฟ (kW)" : "ผลผลิตวันนี้ (kWh)";
-  const secondaryVal = site.livePowerKw !== null ? fmtNum(site.dayEnergyKwh) : "–";
-  const secondaryLbl = site.livePowerKw !== null ? "ผลผลิตวันนี้ (kWh)" : "—";
-
+  const stats = cardStats(site);
   const pillClass = ev.state === "ok" ? "ok" : ev.state === "issue" ? "issue" : "stale";
-  const pillText = ev.state === "ok" ? "ปกติ" : ev.state === "issue" ? "ต้องตรวจสอบ" : "ไม่มีข้อมูล";
+  const pillText = ev.state === "ok" ? "ปกติ" : ev.state === "issue" ? "ต้องตรวจสอบ" : ev.state === "stale" ? "ล่าช้า" : "ไม่มีข้อมูล";
+
+  const statsHtml = stats.length
+    ? `<div class="stats">${stats.map(s=>`<div class="stat"><div class="val">${s.val}<span style="font-size:11px;font-weight:600;"> ${s.unit}</span></div><div class="lbl">${s.label}</div></div>`).join("")}</div>`
+    : `<div class="stats"><div class="stat"><div class="val" style="font-size:13px;color:var(--sub);">ยังไม่มีข้อมูล</div></div></div>`;
 
   const card = document.createElement("div");
-  card.className = "card" + (ev.state === "issue" ? " issue" : "") + (ev.state === "stale" ? " stale" : "");
+  card.className = "card" + (ev.state === "issue" ? " issue" : "") + (ev.state === "stale" || ev.state === "nodata" ? " muted" : "");
   card.innerHTML = `
-    <div class="vendor-tag ${site.vendor}"></div>
+    <div class="vendor-dot ${site.vendor}"></div>
     <div class="card-top">
       <div class="site-name">${site.name}</div>
-      <div class="vendor-pill ${site.vendor}">${site.vendor}</div>
+      <div class="vendor-label">${site.vendor}</div>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="val">${primaryVal}</div><div class="lbl">${primaryLbl}</div></div>
-      <div class="stat"><div class="val">${secondaryVal}</div><div class="lbl">${secondaryLbl}</div></div>
-    </div>
+    ${statsHtml}
     <div class="card-bottom">
       <div class="status-pill ${pillClass}"><span class="dot"></span>${pillText}</div>
       <div class="updated">${relTime(site.lastUpdated)}</div>
@@ -561,9 +677,11 @@ function renderRibbon(){
 function renderFooter(){
   const totalPower = allSites.reduce((a,s)=> a + (s.livePowerKw || 0), 0);
   const issueCount = allSites.filter(s=>evaluate(s).state==="issue").length;
+  const staleCount = allSites.filter(s=>{const st=evaluate(s).state; return st==="stale"||st==="nodata";}).length;
   document.getElementById("totSites").textContent = allSites.length;
   document.getElementById("totPower").textContent = totalPower.toFixed(1);
   document.getElementById("totIssue").textContent = issueCount;
+  document.getElementById("totStale").textContent = staleCount;
   document.getElementById("totRefresh").textContent = new Date().toLocaleTimeString("th-TH");
 }
 
@@ -592,69 +710,126 @@ document.getElementById("pauseBtn").addEventListener("click", ()=>{
 });
 
 /* ============================================================
-   DETAIL MODAL
+   DETAIL MODAL — ข้อมูลเชิงลึกต่อไซต์
    ============================================================ */
-function openDetail(site){
-  paused = true;
-  document.getElementById("pauseBtn").textContent = "▶ เล่นต่อ";
-  resetRotateTimer();
+function row(k,v,unit){
+  if(v===null || v===undefined) return "";
+  return `<div class="detail-row"><div class="k">${k}</div><div class="v">${v}${unit?` ${unit}`:""}</div></div>`;
+}
 
-  const ev = evaluate(site);
-  const primaryVal = site.livePowerKw !== null ? fmtNum(site.livePowerKw) : fmtNum(site.dayEnergyKwh);
-  const primaryLbl = site.livePowerKw !== null ? "กำลังไฟ (kW)" : "ผลผลิตวันนี้ (kWh)";
-  const secondaryVal = site.livePowerKw !== null ? fmtNum(site.dayEnergyKwh) : "–";
-  const secondaryLbl = site.livePowerKw !== null ? "ผลผลิตวันนี้ (kWh)" : "—";
-  const pillClass = ev.state === "ok" ? "ok" : ev.state === "issue" ? "issue" : "stale";
-  const pillText = ev.state === "ok" ? "ปกติ" : ev.state === "issue" ? "ต้องตรวจสอบ" : "ไม่มีข้อมูล";
-
-  let alarmHtml = "";
+function buildDetailBody(site){
+  let html = "";
   if(site.vendor === "Huawei"){
+    const m = site.metrics;
+    html += `<div class="modal-section-title">ผลผลิตพลังงาน</div><div class="detail-rows">`;
+    html += row("ผลผลิตวันนี้", fmtNum(m.dayPower,2), "kWh");
+    html += row("ผลผลิตเดือนนี้", fmtNum(m.monthPower,1), "kWh");
+    html += row("ผลผลิตสะสมทั้งหมด", fmtNum(m.totalPower,1), "kWh");
+    html += row("กำลังการผลิตติดตั้ง", fmtNum(site.capacityKw,3), "kW");
+    html += `</div>`;
+
+    html += `<div class="modal-section-title">การใช้ไฟ / รายได้</div><div class="detail-rows">`;
+    html += row("ใช้เองวันนี้", fmtNum(m.dayUse,2), "kWh");
+    html += row("ขายเข้าระบบวันนี้", fmtNum(m.dayGrid,2), "kWh");
+    html += row("รายได้วันนี้", fmtNum(m.dayIncome,2), "บาท");
+    html += row("รายได้สะสม", fmtNum(m.totalIncome,2), "บาท");
+    html += row("ประหยัดวันนี้", fmtNum(m.savedCost,2), "บาท");
+    html += `</div>`;
+
     if(site.activeAlarms && site.activeAlarms.length){
-      alarmHtml = `<div class="modal-section-title">Alarm ที่กำลัง Active (${site.activeAlarms.length})</div>`;
+      html += `<div class="modal-section-title">Alarm ที่กำลัง Active (${site.activeAlarms.length})</div>`;
       site.activeAlarms.forEach(a=>{
-        alarmHtml += `
+        html += `
           <div class="alarm-card">
             <div class="aname">${a.name}${a.severity ? " · " + a.severity : ""}</div>
             ${a.device ? `<div class="arow"><b>อุปกรณ์:</b> ${a.device}</div>` : ""}
             ${a.occurTime ? `<div class="arow"><b>เวลาที่เกิด:</b> ${a.occurTime}</div>` : ""}
             ${a.cause ? `<div class="arow"><b>สาเหตุ:</b> ${a.cause}</div>` : ""}
-            ${a.suggestion ? `<div class="arow"><b>วิธีแก้:</b> ${a.suggestion}</div>` : ""}
-          </div>
-        `;
+          </div>`;
       });
-    } else if(ev.state === "ok") {
-      alarmHtml = `<div class="modal-section-title">Alarm</div><div class="no-alarm-note">ไม่มี alarm active อยู่ตอนนี้</div>`;
+    } else {
+      html += `<div class="modal-section-title">Alarm</div><div class="no-alarm-note">ไม่มี alarm active อยู่ตอนนี้</div>`;
     }
-  } else {
-    // Deye / Sigen — ไม่มี alarm จริง ใช้ heuristic
+
+  } else if(site.vendor === "Deye"){
+    const m = site.metrics;
+    html += `<div class="modal-section-title">พลังงานตอนนี้</div><div class="detail-rows">`;
+    html += row("กำลังไฟที่ผลิต", fmtNum(m.activePower,2), "kW");
+    html += row("กำลังไฟที่ใช้", fmtNum(m.consumptionPower,2), "kW");
+    html += row("ซื้อ/ขายไฟกับการไฟฟ้า", fmtNum(m.wirePower,2), "kW");
+    html += row("กำลังไฟแบตเตอรี่", fmtNum(m.batteryPower,2), "kW");
+    html += row("ระดับแบตเตอรี่", fmtNum(m.batterySoc,0), "%");
+    html += row("กำลังการผลิตติดตั้ง", fmtNum(site.capacityKw,1), "kW");
+    html += `</div>`;
+
+    const ev = evaluate(site);
     if(ev.state === "issue"){
-      alarmHtml = `
-        <div class="modal-section-title">สถานะที่ตรวจพบ</div>
-        <div class="alarm-card">
-          <div class="aname">${ev.reason}</div>
-        </div>
-        <div class="heuristic-note">
-          ⚠️ ${site.vendor} ยังไม่มี Alarm API จริงให้ดึง — ข้อความนี้เป็นการ<b>ประเมินจากข้อมูลกำลังไฟ/ผลผลิต</b> เท่านั้น
-          ไม่ใช่ alarm ที่ยืนยันจากผู้ผลิต ควรให้ช่างเข้าไปตรวจสอบหน้างานเพื่อยืนยันสาเหตุจริง
-        </div>
-      `;
-    } else if(ev.state === "ok") {
-      alarmHtml = `<div class="modal-section-title">สถานะ</div><div class="no-alarm-note">ไม่พบความผิดปกติจากข้อมูลที่มี (ประเมินแบบ heuristic ไม่ใช่ alarm จริง)</div>`;
+      html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
+    html += `<div class="heuristic-note">⚠️ Deye ยังไม่มี Alarm API จริงให้ดึง — สถานะข้างต้นประเมินจากข้อมูลกำลังไฟเท่านั้น ควรให้ช่างเข้าไปตรวจสอบหน้างานเพื่อยืนยันสาเหตุจริง</div>`;
+
+  } else if(site.vendor === "Sigen"){
+    const m = site.metrics;
+    html += `<div class="modal-section-title">ผลผลิตพลังงาน</div><div class="detail-rows">`;
+    html += row("กำลังไฟตอนนี้", fmtNum(site.livePowerKw,2), "kW");
+    html += row("ผลผลิตวันนี้", fmtNum(m.dayEnergy,2), "kWh");
+    html += row("ผลผลิตเดือนนี้", fmtNum(m.monthEnergy,1), "kWh");
+    html += row("ผลผลิตปีนี้", fmtNum(m.annualEnergy,1), "kWh");
+    html += row("ผลผลิตสะสมทั้งหมด", fmtNum(m.lifetimeEnergy,1), "kWh");
+    html += row("กำลังการผลิตติดตั้ง (PV)", fmtNum(site.capacityKw,2), "kW");
+    html += row("ความจุแบตเตอรี่", fmtNum(site.batteryCapacityKw,2), "kWh");
+    html += `</div>`;
+
+    if(m.lifetimeCo2 !== null || m.lifetimeTree !== null){
+      html += `<div class="modal-section-title">ผลกระทบต่อสิ่งแวดล้อม (สะสม)</div><div class="detail-rows">`;
+      html += row("ลด CO₂", fmtNum(m.lifetimeCo2,2), "ตัน");
+      html += row("เทียบเท่าปลูกต้นไม้", fmtNum(m.lifetimeTree,1), "ต้น");
+      html += `</div>`;
+    }
+
+    if(site.devices && site.devices.length){
+      html += `<div class="modal-section-title">อุปกรณ์ในระบบ (${site.devices.length})</div>`;
+      site.devices.forEach(d=>{
+        html += `<div class="device-card">
+          <div class="dname">${d.type}${d.status ? " · " + d.status : ""}</div>
+          ${d.activePower!==null?`<div class="drow"><span>กำลังไฟ</span><b>${fmtNum(d.activePower,2)} kW</b></div>`:""}
+          ${d.pvPower!==null?`<div class="drow"><span>กำลังไฟจากแผง</span><b>${fmtNum(d.pvPower,2)} kW</b></div>`:""}
+          ${d.temp!==null?`<div class="drow"><span>อุณหภูมิ</span><b>${fmtNum(d.temp,1)} °C</b></div>`:""}
+          ${d.gridFreq!==null?`<div class="drow"><span>ความถี่ไฟฟ้า</span><b>${fmtNum(d.gridFreq,2)} Hz</b></div>`:""}
+        </div>`;
+      });
+    }
+
+    const ev = evaluate(site);
+    if(ev.state === "issue"){
+      html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
+    }
+    html += `<div class="heuristic-note">⚠️ Sigenergy alarm ต้องใช้ MQTT subscription แบบ real-time ซึ่งยังไม่ได้เชื่อมต่อ — สถานะข้างต้นประเมินจากข้อมูลกำลังไฟเท่านั้น</div>`;
   }
+  return html;
+}
+
+function openDetail(site){
+  paused = true;
+  document.getElementById("pauseBtn").textContent = "▶ เล่นต่อ";
+  resetRotateTimer();
+
+  const stats = cardStats(site);
+  const ev = evaluate(site);
+  const pillClass = ev.state === "ok" ? "ok" : ev.state === "issue" ? "issue" : "stale";
+  const pillText = ev.state === "ok" ? "ปกติ" : ev.state === "issue" ? "ต้องตรวจสอบ" : ev.state === "stale" ? "ล่าช้า" : "ไม่มีข้อมูล";
+
+  const topStatsHtml = stats.map(s=>`<div class="stat"><div class="val">${s.val}<span style="font-size:11px;font-weight:600;"> ${s.unit}</span></div><div class="lbl">${s.label}</div></div>`).join("")
+    + `<div class="stat" style="display:flex;flex-direction:column;justify-content:center;"><div class="status-pill ${pillClass}" style="justify-content:center;"><span class="dot"></span>${pillText}</div></div>`;
 
   document.getElementById("modalContent").innerHTML = `
     <div class="modal-header">
       <h2>${site.name}</h2>
-      <div class="vendor-pill ${site.vendor}">${site.vendor}</div>
+      <div class="vendor-chip ${site.vendor}">${site.vendor}</div>
     </div>
     <div class="modal-sub">รหัสไซต์: ${site.id} · อัปเดตล่าสุด ${relTime(site.lastUpdated)}</div>
-    <div class="modal-stats">
-      <div class="stat"><div class="val">${primaryVal}</div><div class="lbl">${primaryLbl}</div></div>
-      <div class="stat"><div class="val">${secondaryVal}</div><div class="lbl">${secondaryLbl}</div></div>
-      <div class="stat"><div class="status-pill ${pillClass}" style="justify-content:center;"><span class="dot"></span>${pillText}</div></div>
-    </div>
-    ${alarmHtml}
+    <div class="modal-stats">${topStatsHtml}</div>
+    ${buildDetailBody(site)}
   `;
   document.getElementById("modalOverlay").classList.add("show");
 }
@@ -690,7 +865,7 @@ async function refreshData(){
     allSites = await loadAllSites();
     allSites.sort((a,b)=>{
       const ea = evaluate(a).state, eb = evaluate(b).state;
-      const rank = s => s==="issue" ? 0 : s==="stale" ? 1 : 2;
+      const rank = s => s==="issue" ? 0 : s==="stale" ? 1 : s==="nodata" ? 2 : 3;
       if(rank(ea) !== rank(eb)) return rank(ea)-rank(eb);
       return a.name.localeCompare(b.name, "th");
     });
