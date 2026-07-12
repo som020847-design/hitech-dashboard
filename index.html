@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Hi-Tech Eco Engineering — Solar Monitoring</title>
+<title>HI-TECH ECO ENERGY — Solar Monitoring</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   :root{
@@ -46,14 +46,7 @@
     color:#fdfaf4;
     flex-shrink:0;
   }
-  .brand{display:flex;align-items:center;gap:14px;}
-  .brand .mark{
-    width:38px;height:38px;border-radius:10px;
-    background:linear-gradient(135deg,var(--sun),var(--sun-deep));
-    display:flex;align-items:center;justify-content:center;
-    font-weight:800;color:#1c2b21;font-size:18px;
-  }
-  .brand h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .brand h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.3px;}
   .brand span{font-size:12px;color:#c9d3c8;display:block;margin-top:2px;}
   .header-right{display:flex;align-items:center;gap:22px;}
   #clock{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;}
@@ -84,6 +77,8 @@
     background:#fff2;padding:3px 10px;border-radius:999px;font-size:12px;flex-shrink:0;
   }
   #ribbonTrack{display:inline-flex;gap:28px;animation:scroll 22s linear infinite;}
+  #ribbonTrack span{cursor:pointer;text-decoration:underline;text-decoration-color:#fff6;text-underline-offset:3px;}
+  #ribbonTrack span:hover{text-decoration-color:#fff;}
   @keyframes scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
 
   /* ---------- Main grid ---------- */
@@ -107,6 +102,12 @@
     box-shadow:0 1px 3px rgba(0,0,0,.03);
     position:relative;
     overflow:hidden;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 16px rgba(0,0,0,.08);
   }
   .card.issue{
     border-color:var(--bad);
@@ -173,7 +174,7 @@
   .totals{display:flex;gap:26px;font-size:12px;color:var(--sub);}
   .totals b{color:var(--ink);font-size:14px;}
   .dots{display:flex;gap:7px;}
-  .dots span{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.25s;}
+  .dots span{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.25s;cursor:pointer;}
   .dots span.active{background:var(--sun-deep);width:22px;border-radius:5px;}
 
   #loading, #errorBox{
@@ -182,17 +183,49 @@
   }
   #errorBox{display:none;color:#93231a;}
   #errorBox code{background:#f3ede0;padding:2px 6px;border-radius:6px;font-size:13px;}
+
+  /* ---------- Detail modal ---------- */
+  #modalOverlay{
+    display:none;position:fixed;inset:0;background:rgba(20,24,20,.55);
+    z-index:50;align-items:center;justify-content:center;padding:30px;
+  }
+  #modalOverlay.show{display:flex;}
+  #modalBox{
+    background:var(--panel);border-radius:18px;max-width:640px;width:100%;
+    max-height:85vh;overflow-y:auto;padding:26px 28px;position:relative;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+  }
+  #modalClose{
+    position:absolute;top:16px;right:16px;background:var(--stale-soft);border:none;
+    width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--sub);
+  }
+  #modalClose:hover{background:var(--line);}
+  .modal-header{display:flex;align-items:center;gap:10px;margin-bottom:4px;padding-right:36px;}
+  .modal-header h2{font-size:19px;margin:0;}
+  .modal-sub{font-size:12px;color:var(--sub);margin-bottom:18px;}
+  .modal-stats{display:flex;gap:12px;margin-bottom:18px;}
+  .modal-stats .stat{flex:1;}
+  .modal-section-title{font-size:13px;font-weight:700;color:var(--sub);margin:18px 0 8px;text-transform:uppercase;letter-spacing:.4px;}
+  .alarm-card{
+    background:var(--bad-soft);border-radius:12px;padding:14px 16px;margin-bottom:10px;
+  }
+  .alarm-card .aname{font-weight:700;color:#7c2a24;font-size:14px;margin-bottom:4px;}
+  .alarm-card .arow{font-size:12px;color:#5c2a24;margin-top:6px;line-height:1.5;}
+  .alarm-card .arow b{color:#3f1a16;}
+  .no-alarm-note{
+    background:var(--leaf-soft);color:#1f5c33;border-radius:12px;padding:14px 16px;font-size:13px;
+  }
+  .heuristic-note{
+    background:var(--stale-soft);color:#55554e;border-radius:12px;padding:12px 14px;font-size:12px;margin-top:10px;
+  }
 </style>
 </head>
 <body>
 
 <header>
   <div class="brand">
-    <div class="mark">☀</div>
-    <div>
-      <h1>Hi-Tech Eco Engineering</h1>
-      <span>Solar Monitoring — Live Overview</span>
-    </div>
+    <h1>HI-TECH ECO ENERGY</h1>
+    <span>Solar Monitoring — Live Overview</span>
   </div>
   <div class="header-right">
     <div id="clock">--:--:-- <small id="dateLine">-</small></div>
@@ -223,16 +256,23 @@
   <div class="dots" id="dots"></div>
 </footer>
 
+<div id="modalOverlay">
+  <div id="modalBox">
+    <button id="modalClose">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    CONFIG
    ============================================================ */
 const SHEET_ID = "1zz5nbLT4SjKFHYWsrsR8TvVpGjgNuOLQHRDe_3ltNNU";
-const PAGE_SIZE = 10;              // การ์ดต่อหน้า (5 คอลัมน์ x 2 แถว)
-const ROTATE_MS = 30000;           // เลื่อนหน้าทุก 30 วิ
-const DATA_REFRESH_MS = 5 * 60000; // ดึงข้อมูลใหม่ทุก 5 นาที
-const STALE_MIN = 40;              // ไม่มีข้อมูลเกินกี่นาทีถือว่า "no data"
-const DAY_START_HOUR = 6;          // ถือว่าเป็น "กลางวัน" ตั้งแต่กี่โมง
+const PAGE_SIZE = 10;
+const ROTATE_MS = 30000;
+const DATA_REFRESH_MS = 5 * 60000;
+const STALE_MIN = 40;
+const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 18;
 
 function gvizUrl(sheetName){
@@ -240,7 +280,7 @@ function gvizUrl(sheetName){
 }
 
 /* ============================================================
-   CSV PARSER (รองรับ quoted field ที่มี comma อยู่ข้างใน)
+   CSV PARSER
    ============================================================ */
 function parseCSV(text){
   const rows = [];
@@ -281,12 +321,11 @@ function num(v){
   return isNaN(n) ? null : n;
 }
 
-/* หา timestamp ล่าสุด "ต่อ id" จากตารางที่เป็น append-only (เรียงเวลาจากเก่า->ใหม่) */
 function latestByKey(rows, keyField){
   const map = new Map();
   for(const r of rows){
     if(!r[keyField]) continue;
-    map.set(r[keyField], r); // เขียนทับเรื่อยๆ แถวหลังสุดจะชนะ
+    map.set(r[keyField], r);
   }
   return [...map.values()];
 }
@@ -298,61 +337,63 @@ function parseTimestamp(s){
 }
 
 /* ============================================================
-   โหลด + รวมข้อมูลจากทั้ง 3 ค่าย ให้เป็นรูปแบบเดียวกัน
-   { vendor, id, name, livePowerKw, dayEnergyKwh, rawStatus, lastUpdated }
+   โหลดและรวมข้อมูล
    ============================================================ */
 async function loadAllSites(){
   const [huawei, deye, sigenInv, huaweiAlarmsRaw] = await Promise.all([
     fetchSheet("Latest_Data"),
     fetchSheet("Deye_Realtime_Data"),
     fetchSheet("Sigen_Inverter_Data"),
-    fetchSheet("Huawei_Alarms").catch(() => [])   // แท็บนี้อาจยังไม่มีถ้ายังไม่เคยรัน alarm script
+    fetchSheet("Huawei_Alarms").catch(() => [])
   ]);
 
-  // ---- หา batch ล่าสุดของ Huawei_Alarms (timestamp_polled ล่าสุด) ----
-  // เพราะเราดึง status=1 (active เท่านั้น) ทุก poll คือ "snapshot ตอนนั้น"
-  // แถวที่มี timestamp_polled ตรงกับรอบล่าสุด = alarm ที่ active อยู่ ณ ตอนนี้
-  let latestHuaweiAlarmMap = new Map();   // stationCode -> [alarmName, ...]
-  let latestHuaweiAlarmPollTime = null;
+  // ---- หา batch ล่าสุดของ Huawei_Alarms พร้อมรายละเอียดเต็ม (ไม่ใช่แค่ชื่อ) ----
+  let latestHuaweiAlarmMap = new Map();   // stationCode -> [{name, device, severity, occurTime, cause, suggestion}, ...]
   if (huaweiAlarmsRaw.length){
     const times = huaweiAlarmsRaw.map(r => parseTimestamp(r.timestamp_polled)).filter(Boolean);
     if (times.length){
-      latestHuaweiAlarmPollTime = new Date(Math.max(...times.map(d => d.getTime())));
-      const latestStr = huaweiAlarmsRaw.reduce((max, r) => {
+      const latestTime = Math.max(...times.map(d => d.getTime()));
+      const latestStr = huaweiAlarmsRaw.find(r => {
         const t = parseTimestamp(r.timestamp_polled);
-        return (t && t.getTime() === latestHuaweiAlarmPollTime.getTime()) ? r.timestamp_polled : max;
-      }, null);
+        return t && t.getTime() === latestTime;
+      })?.timestamp_polled;
+
       huaweiAlarmsRaw
         .filter(r => r.timestamp_polled === latestStr)
         .forEach(r => {
           const key = r.stationCode;
           if (!key) return;
-          const label = r.alarmName || "Alarm";
           if (!latestHuaweiAlarmMap.has(key)) latestHuaweiAlarmMap.set(key, []);
-          latestHuaweiAlarmMap.get(key).push(label);
+          latestHuaweiAlarmMap.get(key).push({
+            name: r.alarmName || "Alarm",
+            device: r.deviceName || "",
+            severity: r.alarmSeverity || "",
+            occurTime: r.occurTime || "",
+            cause: r.alarmCause || "",
+            suggestion: r.repairSuggestion || ""
+          });
         });
     }
   }
 
   const sites = [];
 
-  // ---- Huawei: Latest_Data มีแถวเดียวต่อไซต์อยู่แล้ว ----
+  // ---- Huawei ----
   for(const r of huawei){
     if(!r.stationCode) continue;
     sites.push({
       vendor:"Huawei",
       id:r.stationCode,
       name:r.stationName || r.stationCode,
-      livePowerKw:null, // ไม่มี field นี้ใน Latest_Data
+      livePowerKw:null,
       dayEnergyKwh:num(r.day_power),
       rawStatus:r.status || "",
       lastUpdated:parseTimestamp(r.timestamp),
-      activeAlarms: latestHuaweiAlarmMap.get(r.stationCode) || [],   // alarm จริงจาก Huawei_Alarms
-      alarmPollTime: latestHuaweiAlarmPollTime
+      activeAlarms: latestHuaweiAlarmMap.get(r.stationCode) || []
     });
   }
 
-  // ---- Deye: ต้องเอาแถวล่าสุดต่อ stationId (append-only) ----
+  // ---- Deye ----
   const deyeLatest = latestByKey(deye, "stationId");
   for(const r of deyeLatest){
     sites.push({
@@ -360,13 +401,14 @@ async function loadAllSites(){
       id:r.stationId,
       name:r.stationName || r.stationId,
       livePowerKw:num(r.active_power_kW),
-      dayEnergyKwh:null, // Deye /station/latest ไม่มีพลังงานสะสมรายวัน
+      dayEnergyKwh:null,
       rawStatus:"",
-      lastUpdated:parseTimestamp(r.timestamp)
+      lastUpdated:parseTimestamp(r.timestamp),
+      activeAlarms: []
     });
   }
 
-  // ---- Sigen: รวมระดับ inverter ขึ้นเป็นระดับไซต์ (systemName) ----
+  // ---- Sigen ----
   const bySystem = new Map();
   for(const r of sigenInv){
     if(!r.systemId) continue;
@@ -374,7 +416,7 @@ async function loadAllSites(){
     if(!bySystem.has(key)){
       bySystem.set(key, {
         vendor:"Sigen", id:key, name:r.systemName || key,
-        livePowerKw:0, dayEnergyKwh:null, rawStatus:"", lastUpdated:null
+        livePowerKw:0, dayEnergyKwh:null, rawStatus:"", lastUpdated:null, activeAlarms: []
       });
     }
     const s = bySystem.get(key);
@@ -392,7 +434,7 @@ async function loadAllSites(){
 }
 
 /* ============================================================
-   ตัด "ปัญหา" — heuristic จากข้อมูลที่มี (ไม่ใช่ alarm จริงของแต่ละค่าย)
+   ตัดสิน "ปัญหา"
    ============================================================ */
 function evaluate(site){
   const now = new Date();
@@ -400,38 +442,35 @@ function evaluate(site){
   const isDaytime = hour >= DAY_START_HOUR && hour < DAY_END_HOUR;
 
   if(!site.lastUpdated){
-    return {state:"stale", reason:"ไม่มีข้อมูล"};
+    return {state:"stale", reason:"ไม่มีข้อมูล", isReal:true};
   }
   const ageMin = (now - site.lastUpdated) / 60000;
   if(ageMin > STALE_MIN){
-    return {state:"stale", reason:`ไม่อัปเดต ${Math.round(ageMin)} นาที`};
+    return {state:"stale", reason:`ไม่อัปเดต ${Math.round(ageMin)} นาที`, isReal:true};
   }
 
-  // ---- Huawei: ใช้ alarm จริงจาก Huawei_Alarms แทน heuristic เดา ----
   if(site.vendor === "Huawei"){
     if(site.activeAlarms && site.activeAlarms.length){
-      return {state:"issue", reason:site.activeAlarms.join(", ")};
+      const names = site.activeAlarms.map(a=>a.name).join(", ");
+      return {state:"issue", reason:names, isReal:true};
     }
-    // ไม่มี alarm active ตอนนี้ = ปกติ (ไม่ต้องเดาจาก day_power อีกแล้ว)
-    return {state:"ok", reason:""};
+    return {state:"ok", reason:"", isReal:true};
   }
 
-  // ---- Deye / Sigen: ยังไม่มี alarm API จริง ใช้ heuristic ต่อไป ----
   const statusLower = (site.rawStatus || "").toLowerCase();
   if(statusLower.includes("fault") || statusLower.includes("alarm")){
-    return {state:"issue", reason:`สถานะ: ${site.rawStatus}`};
+    return {state:"issue", reason:`สถานะ: ${site.rawStatus}`, isReal:false};
   }
-
   if(site.livePowerKw !== null){
     if(isDaytime && site.livePowerKw < 0.05){
-      return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ตอนกลางวัน (ประเมินจากข้อมูล ไม่ใช่ alarm จริง)"};
+      return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ตอนกลางวัน", isReal:false};
     }
   } else if(site.dayEnergyKwh !== null){
     if(hour >= 10 && site.dayEnergyKwh < 0.05){
-      return {state:"issue", reason:"ยังไม่มีผลผลิตวันนี้ (ประเมินจากข้อมูล ไม่ใช่ alarm จริง)"};
+      return {state:"issue", reason:"ยังไม่มีผลผลิตวันนี้", isReal:false};
     }
   }
-  return {state:"ok", reason:""};
+  return {state:"ok", reason:"", isReal:false};
 }
 
 /* ============================================================
@@ -481,6 +520,7 @@ function buildCard(site){
       <div class="updated">${relTime(site.lastUpdated)}</div>
     </div>
   `;
+  card.addEventListener("click", () => openDetail(site));
   return card;
 }
 
@@ -508,9 +548,14 @@ function renderRibbon(){
   const issues = allSites.map(s=>({site:s, ev:evaluate(s)})).filter(x=>x.ev.state==="issue");
   if(!issues.length){ ribbon.classList.remove("show"); return; }
   ribbon.classList.add("show");
-  const items = issues.map(x=>`${x.site.name} — ${x.ev.reason}`);
-  const doubled = [...items, ...items]; // ให้ scroll วนลื่นๆ
-  track.innerHTML = doubled.map(t=>`<span>${t}</span>`).join("");
+  track.innerHTML = "";
+  const doubled = [...issues, ...issues];
+  doubled.forEach(x=>{
+    const span = document.createElement("span");
+    span.textContent = `${x.site.name} — ${x.ev.reason}`;
+    span.addEventListener("click", ()=> openDetail(x.site));
+    track.appendChild(span);
+  });
 }
 
 function renderFooter(){
@@ -544,6 +589,85 @@ document.getElementById("pauseBtn").addEventListener("click", ()=>{
   paused = !paused;
   document.getElementById("pauseBtn").textContent = paused ? "▶ เล่นต่อ" : "⏸ หยุดเลื่อน";
   resetRotateTimer();
+});
+
+/* ============================================================
+   DETAIL MODAL
+   ============================================================ */
+function openDetail(site){
+  paused = true;
+  document.getElementById("pauseBtn").textContent = "▶ เล่นต่อ";
+  resetRotateTimer();
+
+  const ev = evaluate(site);
+  const primaryVal = site.livePowerKw !== null ? fmtNum(site.livePowerKw) : fmtNum(site.dayEnergyKwh);
+  const primaryLbl = site.livePowerKw !== null ? "กำลังไฟ (kW)" : "ผลผลิตวันนี้ (kWh)";
+  const secondaryVal = site.livePowerKw !== null ? fmtNum(site.dayEnergyKwh) : "–";
+  const secondaryLbl = site.livePowerKw !== null ? "ผลผลิตวันนี้ (kWh)" : "—";
+  const pillClass = ev.state === "ok" ? "ok" : ev.state === "issue" ? "issue" : "stale";
+  const pillText = ev.state === "ok" ? "ปกติ" : ev.state === "issue" ? "ต้องตรวจสอบ" : "ไม่มีข้อมูล";
+
+  let alarmHtml = "";
+  if(site.vendor === "Huawei"){
+    if(site.activeAlarms && site.activeAlarms.length){
+      alarmHtml = `<div class="modal-section-title">Alarm ที่กำลัง Active (${site.activeAlarms.length})</div>`;
+      site.activeAlarms.forEach(a=>{
+        alarmHtml += `
+          <div class="alarm-card">
+            <div class="aname">${a.name}${a.severity ? " · " + a.severity : ""}</div>
+            ${a.device ? `<div class="arow"><b>อุปกรณ์:</b> ${a.device}</div>` : ""}
+            ${a.occurTime ? `<div class="arow"><b>เวลาที่เกิด:</b> ${a.occurTime}</div>` : ""}
+            ${a.cause ? `<div class="arow"><b>สาเหตุ:</b> ${a.cause}</div>` : ""}
+            ${a.suggestion ? `<div class="arow"><b>วิธีแก้:</b> ${a.suggestion}</div>` : ""}
+          </div>
+        `;
+      });
+    } else if(ev.state === "ok") {
+      alarmHtml = `<div class="modal-section-title">Alarm</div><div class="no-alarm-note">ไม่มี alarm active อยู่ตอนนี้</div>`;
+    }
+  } else {
+    // Deye / Sigen — ไม่มี alarm จริง ใช้ heuristic
+    if(ev.state === "issue"){
+      alarmHtml = `
+        <div class="modal-section-title">สถานะที่ตรวจพบ</div>
+        <div class="alarm-card">
+          <div class="aname">${ev.reason}</div>
+        </div>
+        <div class="heuristic-note">
+          ⚠️ ${site.vendor} ยังไม่มี Alarm API จริงให้ดึง — ข้อความนี้เป็นการ<b>ประเมินจากข้อมูลกำลังไฟ/ผลผลิต</b> เท่านั้น
+          ไม่ใช่ alarm ที่ยืนยันจากผู้ผลิต ควรให้ช่างเข้าไปตรวจสอบหน้างานเพื่อยืนยันสาเหตุจริง
+        </div>
+      `;
+    } else if(ev.state === "ok") {
+      alarmHtml = `<div class="modal-section-title">สถานะ</div><div class="no-alarm-note">ไม่พบความผิดปกติจากข้อมูลที่มี (ประเมินแบบ heuristic ไม่ใช่ alarm จริง)</div>`;
+    }
+  }
+
+  document.getElementById("modalContent").innerHTML = `
+    <div class="modal-header">
+      <h2>${site.name}</h2>
+      <div class="vendor-pill ${site.vendor}">${site.vendor}</div>
+    </div>
+    <div class="modal-sub">รหัสไซต์: ${site.id} · อัปเดตล่าสุด ${relTime(site.lastUpdated)}</div>
+    <div class="modal-stats">
+      <div class="stat"><div class="val">${primaryVal}</div><div class="lbl">${primaryLbl}</div></div>
+      <div class="stat"><div class="val">${secondaryVal}</div><div class="lbl">${secondaryLbl}</div></div>
+      <div class="stat"><div class="status-pill ${pillClass}" style="justify-content:center;"><span class="dot"></span>${pillText}</div></div>
+    </div>
+    ${alarmHtml}
+  `;
+  document.getElementById("modalOverlay").classList.add("show");
+}
+
+function closeDetail(){
+  document.getElementById("modalOverlay").classList.remove("show");
+}
+document.getElementById("modalClose").addEventListener("click", closeDetail);
+document.getElementById("modalOverlay").addEventListener("click", (e)=>{
+  if(e.target.id === "modalOverlay") closeDetail();
+});
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape") closeDetail();
 });
 
 /* ============================================================
