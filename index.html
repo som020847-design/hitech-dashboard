@@ -267,10 +267,13 @@
   /* ---------- Mobile ---------- */
   @media (max-width:700px){
     body{overflow-y:auto;height:auto;min-height:100vh;}
-    header{flex-direction:column;align-items:flex-start;gap:10px;padding:18px 18px 12px;}
-    .header-right{width:100%;justify-content:space-between;}
-    .brand h1{font-size:17px;}
-    #clock{font-size:15px;}
+    header{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;}
+    .brand{gap:0;}
+    .brand h1{font-size:14.5px;line-height:1.25;}
+    .brand span{display:none;}
+    .header-right{width:auto;justify-content:flex-end;}
+    #clock{font-size:12.5px;text-align:right;}
+    #clock small{font-size:9px;}
     #pauseBtn{display:none;}
     #ribbon{margin:0 18px 8px;padding:9px 16px;font-size:12px;border-radius:12px;}
     #loading,#errorBox{padding:40px 24px;font-size:14px;text-align:center;}
@@ -481,6 +484,33 @@ async function loadAllSites(){
     }catch(e){ return ""; }
   }
 
+  // ---- Deye: history of active power per station (to detect *sustained* zero, not momentary) ----
+  const deyeHistoryMap = new Map();
+  for(const r of deyeAll){
+    if(!r.stationId) continue;
+    const t = parseTimestamp(r.timestamp);
+    if(!t) continue;
+    if(!deyeHistoryMap.has(r.stationId)) deyeHistoryMap.set(r.stationId, []);
+    deyeHistoryMap.get(r.stationId).push({t:t.getTime(), val:num(r.active_power_kW)});
+  }
+  for(const arr of deyeHistoryMap.values()) arr.sort((a,b)=>a.t-b.t);
+
+  // ---- Sigen: history of total PV power per system (sum of devices at each timestamp) ----
+  const sigenTsPower = new Map();
+  for(const r of sigenInvAll){
+    if(!r.systemId || !r.timestamp) continue;
+    const t = parseTimestamp(r.timestamp);
+    if(!t) continue;
+    if(!sigenTsPower.has(r.systemId)) sigenTsPower.set(r.systemId, new Map());
+    const m = sigenTsPower.get(r.systemId);
+    const tk = t.getTime();
+    m.set(tk, (m.get(tk)||0) + (num(r.pv_power_kW) || 0));
+  }
+  const sigenHistoryMap = new Map();
+  for(const [key, m] of sigenTsPower){
+    sigenHistoryMap.set(key, [...m.entries()].map(([t,val])=>({t,val})).sort((a,b)=>a.t-b.t));
+  }
+
   const sites = [];
 
   // ---- Huawei ----
@@ -518,6 +548,7 @@ async function loadAllSites(){
       activeAlarms: [],
       capacityKw: deyeCapMap.get(r.stationId) ?? null,
       livePowerKw: num(r.active_power_kW),
+      powerHistory: deyeHistoryMap.get(r.stationId) || [],
       metrics:{
         activePower: num(r.active_power_kW),
         consumptionPower: num(r.consumption_power_kW),
@@ -541,6 +572,7 @@ async function loadAllSites(){
         vendor:"Sigen", id:key, name:r.systemName || key,
         livePowerKw:0, lastUpdated:null, activeAlarms: [], devices:[],
         capacityKw: (sigenCapMap.get(key)||{}).pv ?? null,
+        powerHistory: sigenHistoryMap.get(key) || [],
         metrics:{}
       });
     }
@@ -583,6 +615,17 @@ async function loadAllSites(){
 /* ============================================================
    ตัดสิน "ปัญหา"
    ============================================================ */
+function sustainedZero(history, thresholdKw=0.05, minGapMin=10, maxGapMin=45){
+  if(!history || history.length < 2) return false; // not enough history yet — don't alarm prematurely
+  const last = history[history.length-1];
+  const prev = history[history.length-2];
+  if(last.val === null || prev.val === null) return false;
+  if(last.val >= thresholdKw || prev.val >= thresholdKw) return false;
+  const gapMin = (last.t - prev.t) / 60000;
+  if(gapMin < minGapMin || gapMin > maxGapMin) return false;
+  return true;
+}
+
 function evaluate(site){
   const now = new Date();
   const hour = now.getHours();
@@ -608,10 +651,8 @@ function evaluate(site){
   if(raw.includes("fault") || raw.includes("alarm")){
     return {state:"issue", reason:"สถานะผิดปกติ"};
   }
-  if(site.livePowerKw !== null){
-    if(isDaytime && site.livePowerKw < 0.05){
-      return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ตอนกลางวัน"};
-    }
+  if(isDaytime && sustainedZero(site.powerHistory)){
+    return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ต่อเนื่องเกิน 15 นาที"};
   }
   return {state:"ok", reason:""};
 }
