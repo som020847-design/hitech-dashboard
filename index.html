@@ -77,7 +77,34 @@
   }
   #pauseBtn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(232,93,4,.35);}
 
-  /* ---------- Problem ribbon ---------- */
+  /* ---------- Search bar ---------- */
+  #searchBar{
+    flex-shrink:0;
+    display:flex;align-items:center;gap:10px;
+    margin:0 34px 12px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:10px 16px;
+    box-shadow:0 1px 2px rgba(30,20,0,.03);
+  }
+  #searchIcon{font-size:14px;opacity:.6;flex-shrink:0;}
+  #searchInput{
+    flex:1;border:none;outline:none;background:transparent;
+    font-family:inherit;font-size:14px;color:var(--ink);
+  }
+  #searchInput::placeholder{color:var(--sub);}
+  #searchClear{
+    border:none;background:var(--stale-soft);color:var(--sub);
+    width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:11px;flex-shrink:0;
+  }
+  #searchClear:hover{background:var(--line);}
+  #searchNoResults{
+    display:none;flex:1;align-items:center;justify-content:center;
+    color:var(--sub);font-size:14px;padding:40px;
+  }
+
+  /* ---------- Ribbon ---------- */
   #ribbon{
     flex-shrink:0;
     background:linear-gradient(90deg,#ff5a45,#ff8a3d);
@@ -135,6 +162,9 @@
     border-color:#ffcec5;
     animation:pulse 2s ease-in-out infinite;
   }
+  .card.warning{
+    border-color:#ffe1a0;
+  }
   @keyframes pulse{
     0%,100%{box-shadow:0 0 0 0 rgba(255,77,61,.28);}
     50%{box-shadow:0 0 0 8px rgba(255,77,61,0);}
@@ -170,6 +200,9 @@
   .card.issue .stat{background:var(--issue-soft);}
   .card.issue .stat .val{color:#a8281c;}
   .card.issue .stat .lbl{color:#c14d40;}
+  .card.warning .stat{background:var(--yellow-soft);}
+  .card.warning .stat .val{color:#8a6100;}
+  .card.warning .stat .lbl{color:#a37a1e;}
 
   .card-bottom{
     display:flex;justify-content:space-between;align-items:center;margin-top:10px;
@@ -183,6 +216,8 @@
   .status-pill.ok .dot{background:var(--ok);}
   .status-pill.issue{background:var(--issue-soft);color:#a8281c;}
   .status-pill.issue .dot{background:var(--issue);}
+  .status-pill.warning{background:var(--yellow-soft);color:#8a6100;}
+  .status-pill.warning .dot{background:var(--yellow);}
   .status-pill.stale{background:var(--stale-soft);color:#6b6b6f;}
   .status-pill.stale .dot{background:var(--stale);}
   .updated{font-size:10px;color:var(--sub);font-weight:500;}
@@ -276,6 +311,8 @@
     #clock small{font-size:9px;}
     #pauseBtn{display:none;}
     #ribbon{margin:0 18px 8px;padding:9px 16px;font-size:12px;border-radius:12px;}
+    #searchBar{margin:0 18px 10px;padding:8px 14px;}
+    #searchInput{font-size:13px;}
     #loading,#errorBox{padding:40px 24px;font-size:14px;text-align:center;}
     main{
       grid-template-columns:repeat(2,1fr);
@@ -319,6 +356,12 @@
   </div>
 </header>
 
+<div id="searchBar">
+  <span id="searchIcon">🔍</span>
+  <input id="searchInput" type="text" placeholder="ค้นหาชื่อ...">
+  <button id="searchClear" style="display:none;">✕</button>
+</div>
+
 <div id="ribbon">
   <span class="tag">ต้องตรวจสอบ</span>
   <div id="ribbonTrack"></div>
@@ -331,6 +374,7 @@
 </div>
 
 <main id="grid" style="display:none;"></main>
+<div id="searchNoResults">ไม่พบไซต์ที่ตรงกับคำค้นหา</div>
 
 <footer id="footerBox" style="display:none;">
   <div class="totals">
@@ -430,7 +474,7 @@ function parseTimestamp(s){
 async function loadAllSites(){
   const [
     huaweiLatest, huaweiStations, huaweiAlarmsRaw,
-    deyeAll, deyeStations,
+    deyeAll, deyeStations, deyeDeviceStatus,
     sigenInvAll, sigenRealtimeAll, sigenStations
   ] = await Promise.all([
     fetchSheet("Latest_Data"),
@@ -438,6 +482,7 @@ async function loadAllSites(){
     fetchSheet("Huawei_Alarms").catch(() => []),
     fetchSheet("Deye_Realtime_Data"),
     fetchSheet("Deye_Station_List").catch(()=>[]),
+    fetchSheet("Deye_Device_Status").catch(()=>[]),
     fetchSheet("Sigen_Inverter_Data"),
     fetchSheet("Sigen_Realtime_Data").catch(()=>[]),
     fetchSheet("Sigen_Station_List").catch(()=>[])
@@ -495,6 +540,20 @@ async function loadAllSites(){
   }
   for(const arr of deyeHistoryMap.values()) arr.sort((a,b)=>a.t-b.t);
 
+  // ---- Deye: per-device connectStatus (real connectivity signal, same as Deye Cloud's own
+  // Online / Partially Offline / Offline classification) grouped by stationId ----
+  const deyeDeviceMap = new Map();
+  for(const r of deyeDeviceStatus){
+    if(!r.stationId) continue;
+    if(!deyeDeviceMap.has(r.stationId)) deyeDeviceMap.set(r.stationId, []);
+    deyeDeviceMap.get(r.stationId).push({
+      type: r.deviceType || "Device",
+      sn: r.deviceSn || "",
+      connected: String(r.connectStatus) === "1",
+      lastSeen: r.collectionTime || ""
+    });
+  }
+
   // ---- Sigen: history of total PV power per system (sum of devices at each timestamp) ----
   const sigenTsPower = new Map();
   for(const r of sigenInvAll){
@@ -523,6 +582,7 @@ async function loadAllSites(){
       lastUpdated:parseTimestamp(r.timestamp),
       activeAlarms: latestHuaweiAlarmMap.get(r.stationCode) || [],
       capacityKw: huaweiCapMap.get(r.stationCode) ?? null,
+      rawStatus: r.status || "",
       metrics:{
         dayPower: num(r.day_power),
         monthPower: num(r.month_power),
@@ -549,6 +609,7 @@ async function loadAllSites(){
       capacityKw: deyeCapMap.get(r.stationId) ?? null,
       livePowerKw: num(r.active_power_kW),
       powerHistory: deyeHistoryMap.get(r.stationId) || [],
+      deviceStatusList: deyeDeviceMap.get(r.stationId) || [],
       metrics:{
         activePower: num(r.active_power_kW),
         consumptionPower: num(r.consumption_power_kW),
@@ -626,35 +687,60 @@ function sustainedZero(history, thresholdKw=0.05, minGapMin=10, maxGapMin=45){
   return true;
 }
 
+// states: "ok" | "fault" (confirmed device/vendor fault) | "offline" (no/stale data or comms alarm) | "issue" (uncertain heuristic — Deye/Sigen zero-power guess)
 function evaluate(site){
   const now = new Date();
   const hour = now.getHours();
   const isDaytime = hour >= DAY_START_HOUR && hour < DAY_END_HOUR;
 
   if(!site.lastUpdated){
-    return {state:"nodata", reason:"ไม่มีข้อมูล"};
+    return {state:"offline", reason:"ไม่มีข้อมูล"};
   }
   const ageMin = (now - site.lastUpdated) / 60000;
   if(ageMin > STALE_MIN){
-    return {state:"stale", reason:`ข้อมูลล่าช้า ${Math.round(ageMin)} นาที`};
+    return {state:"offline", reason:`ข้อมูลล่าช้า ${Math.round(ageMin)} นาที`};
   }
 
   if(site.vendor === "Huawei"){
     if(site.activeAlarms && site.activeAlarms.length){
       const names = site.activeAlarms.map(a=>a.name).join(", ");
-      return {state:"issue", reason:names};
+      const isOfflineType = site.activeAlarms.some(a => /connection|communication|network|offline|disconnect/i.test(a.name||""));
+      return {state: isOfflineType ? "offline" : "fault", reason:names};
     }
     return {state:"ok", reason:""};
   }
 
   const raw = (site.devices ? site.devices.map(d=>d.status).join(" ") : (site.metrics.status||"")).toLowerCase();
   if(raw.includes("fault") || raw.includes("alarm")){
-    return {state:"issue", reason:"สถานะผิดปกติ"};
+    return {state:"fault", reason:"สถานะผิดปกติ"};
   }
+
+  // Deye: real per-device connectStatus (matches Deye Cloud's own Online/Partially Offline/Offline)
+  if(site.vendor === "Deye" && site.deviceStatusList && site.deviceStatusList.length){
+    const total = site.deviceStatusList.length;
+    const connected = site.deviceStatusList.filter(d => d.connected).length;
+    if(connected === 0){
+      return {state:"offline", reason:"อุปกรณ์ทั้งหมดขาดการเชื่อมต่อ (Offline)"};
+    }
+    if(connected < total){
+      const names = site.deviceStatusList.filter(d=>!d.connected).map(d=>d.type).join(", ");
+      return {state:"partial", reason:`${names} ขาดการเชื่อมต่อ (${connected}/${total} เชื่อมต่ออยู่)`};
+    }
+  }
+
   if(isDaytime && sustainedZero(site.powerHistory)){
     return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ต่อเนื่องเกิน 15 นาที"};
   }
   return {state:"ok", reason:""};
+}
+
+function pillInfo(ev){
+  if(ev.state === "ok") return {cls:"ok", text:"ปกติ"};
+  if(ev.state === "fault") return {cls:"issue", text:"ผิดพลาด"};
+  if(ev.state === "issue") return {cls:"issue", text:"ต้องตรวจสอบ"};
+  if(ev.state === "partial") return {cls:"warning", text:"เชื่อมต่อไม่ครบ"};
+  if(ev.state === "offline") return {cls:"stale", text:"ออฟไลน์"};
+  return {cls:"stale", text:"ไม่ทราบสถานะ"};
 }
 
 /* ============================================================
@@ -709,15 +795,14 @@ let allSites = [];
 function buildCard(site){
   const ev = evaluate(site);
   const stats = cardStats(site);
-  const pillClass = ev.state === "ok" ? "ok" : ev.state === "issue" ? "issue" : "stale";
-  const pillText = ev.state === "ok" ? "ปกติ" : ev.state === "issue" ? "ต้องตรวจสอบ" : ev.state === "stale" ? "ล่าช้า" : "ไม่มีข้อมูล";
+  const pill = pillInfo(ev);
 
   const statsHtml = stats.length
     ? `<div class="stats">${stats.map(s=>`<div class="stat"><div class="val">${s.val}</div><div class="lbl">${s.label}<span class="unit"> (${s.unit})</span></div></div>`).join("")}</div>`
     : `<div class="stats"><div class="stat"><div class="val" style="font-size:13px;color:var(--sub);">ยังไม่มีข้อมูล</div></div></div>`;
 
   const card = document.createElement("div");
-  card.className = "card" + (ev.state === "issue" ? " issue" : "") + (ev.state === "stale" || ev.state === "nodata" ? " muted" : "");
+  card.className = "card" + (ev.state === "fault" || ev.state === "issue" ? " issue" : "") + (ev.state === "partial" ? " warning" : "");
   card.innerHTML = `
     <div class="vendor-dot ${site.vendor}"></div>
     <div class="card-top">
@@ -726,7 +811,7 @@ function buildCard(site){
     </div>
     ${statsHtml}
     <div class="card-bottom">
-      <div class="status-pill ${pillClass}"><span class="dot"></span>${pillText}</div>
+      <div class="status-pill ${pill.cls}"><span class="dot"></span>${pill.text}</div>
       <div class="updated">${relTime(site.lastUpdated)}</div>
     </div>
   `;
@@ -755,14 +840,15 @@ function buildDots(){
 function renderRibbon(){
   const ribbon = document.getElementById("ribbon");
   const track = document.getElementById("ribbonTrack");
-  const issues = allSites.map(s=>({site:s, ev:evaluate(s)})).filter(x=>x.ev.state==="issue");
+  const issues = allSites.map(s=>({site:s, ev:evaluate(s)})).filter(x=>x.ev.state==="fault" || x.ev.state==="issue" || x.ev.state==="partial");
   if(!issues.length){ ribbon.classList.remove("show"); return; }
   ribbon.classList.add("show");
   track.innerHTML = "";
   const doubled = [...issues, ...issues];
   doubled.forEach(x=>{
     const span = document.createElement("span");
-    span.textContent = `${x.site.name} — ${x.ev.reason}`;
+    const tag = x.ev.state === "fault" ? "ผิดพลาด" : x.ev.state === "partial" ? "เชื่อมต่อไม่ครบ" : "ต้องตรวจสอบ";
+    span.textContent = `${x.site.name} [${tag}] — ${x.ev.reason}`;
     span.addEventListener("click", ()=> openDetail(x.site));
     track.appendChild(span);
   });
@@ -770,12 +856,12 @@ function renderRibbon(){
 
 function renderFooter(){
   const totalPower = allSites.reduce((a,s)=> a + (s.livePowerKw || 0), 0);
-  const issueCount = allSites.filter(s=>evaluate(s).state==="issue").length;
-  const staleCount = allSites.filter(s=>{const st=evaluate(s).state; return st==="stale"||st==="nodata";}).length;
+  const issueCount = allSites.filter(s=>{const st=evaluate(s).state; return st==="fault"||st==="issue"||st==="partial";}).length;
+  const offlineCount = allSites.filter(s=>evaluate(s).state==="offline").length;
   document.getElementById("totSites").textContent = allSites.length;
   document.getElementById("totPower").textContent = totalPower.toFixed(1);
   document.getElementById("totIssue").textContent = issueCount;
-  document.getElementById("totStale").textContent = staleCount;
+  document.getElementById("totStale").textContent = offlineCount;
   document.getElementById("totRefresh").textContent = new Date().toLocaleTimeString("th-TH");
 }
 
@@ -783,13 +869,22 @@ function isMobileView(){
   return window.matchMedia("(max-width:700px)").matches;
 }
 
+let searchQuery = "";
+
 function paginate(){
-  if(isMobileView()){
-    PAGES = [allSites];
+  const filtered = searchQuery
+    ? allSites.filter(s => s.name.toLowerCase().includes(searchQuery) || s.id.toLowerCase().includes(searchQuery))
+    : allSites;
+
+  document.getElementById("searchNoResults").style.display = (searchQuery && !filtered.length) ? "flex" : "none";
+  document.getElementById("grid").style.display = (searchQuery && !filtered.length) ? "none" : "grid";
+
+  if(searchQuery || isMobileView()){
+    PAGES = [filtered];
   } else {
     PAGES = [];
-    for(let i=0;i<allSites.length;i+=PAGE_SIZE){
-      PAGES.push(allSites.slice(i, i+PAGE_SIZE));
+    for(let i=0;i<filtered.length;i+=PAGE_SIZE){
+      PAGES.push(filtered.slice(i, i+PAGE_SIZE));
     }
   }
   if(!PAGES.length) PAGES = [[]];
@@ -798,7 +893,7 @@ function paginate(){
 
 function resetRotateTimer(){
   clearInterval(rotateTimer);
-  if(paused || isMobileView() || PAGES.length <= 1) return;
+  if(paused || isMobileView() || searchQuery || PAGES.length <= 1) return;
   rotateTimer = setInterval(()=>{
     currentPage = (currentPage+1) % PAGES.length;
     renderPage(currentPage);
@@ -808,6 +903,30 @@ function resetRotateTimer(){
 document.getElementById("pauseBtn").addEventListener("click", ()=>{
   paused = !paused;
   document.getElementById("pauseBtn").textContent = paused ? "▶ เล่นต่อ" : "⏸ หยุดเลื่อน";
+  resetRotateTimer();
+});
+
+const searchInput = document.getElementById("searchInput");
+const searchClear = document.getElementById("searchClear");
+searchInput.addEventListener("input", ()=>{
+  searchQuery = searchInput.value.trim().toLowerCase();
+  searchClear.style.display = searchQuery ? "block" : "none";
+  if(!allSites.length) return;
+  paginate();
+  buildDots();
+  currentPage = 0;
+  renderPage(currentPage);
+  resetRotateTimer();
+});
+searchClear.addEventListener("click", ()=>{
+  searchInput.value = "";
+  searchQuery = "";
+  searchClear.style.display = "none";
+  if(!allSites.length) return;
+  paginate();
+  buildDots();
+  currentPage = 0;
+  renderPage(currentPage);
   resetRotateTimer();
 });
 
@@ -864,11 +983,22 @@ function buildDetailBody(site){
     html += row("กำลังการผลิตติดตั้ง", fmtNum(site.capacityKw,1), "kW");
     html += `</div>`;
 
+    if(site.deviceStatusList && site.deviceStatusList.length){
+      html += `<div class="modal-section-title">สถานะการเชื่อมต่ออุปกรณ์ (${site.deviceStatusList.length})</div>`;
+      site.deviceStatusList.forEach(d=>{
+        html += `<div class="device-card">
+          <div class="dname">${d.type}</div>
+          <div class="drow"><span>สถานะ</span><b style="color:${d.connected ? '#186b38' : '#a8281c'}">${d.connected ? 'เชื่อมต่ออยู่' : 'ขาดการเชื่อมต่อ'}</b></div>
+          ${d.lastSeen ? `<div class="drow"><span>เห็นข้อมูลล่าสุด</span><b>${d.lastSeen}</b></div>` : ""}
+        </div>`;
+      });
+    }
+
     const ev = evaluate(site);
-    if(ev.state === "issue"){
+    if(ev.state === "issue" || ev.state === "fault" || ev.state === "partial"){
       html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
-    html += `<div class="heuristic-note">⚠️ Deye ยังไม่มี Alarm API จริงให้ดึง — สถานะข้างต้นประเมินจากข้อมูลกำลังไฟเท่านั้น ควรให้ช่างเข้าไปตรวจสอบหน้างานเพื่อยืนยันสาเหตุจริง</div>`;
+    html += `<div class="heuristic-note">ℹ️ สถานะ "เชื่อมต่อไม่ครบ/ออฟไลน์" มาจากข้อมูล connectStatus จริงของแต่ละอุปกรณ์ (แหล่งเดียวกับที่ Deye Cloud ใช้) ส่วนสถานะ "ต้องตรวจสอบ" (กำลังไฟเป็น 0 ต่อเนื่อง) ยังเป็นการประเมิน heuristic เพราะ Deye ไม่มี Alarm API สาธารณะให้ดึงรายละเอียดเพิ่ม</div>`;
 
   } else if(site.vendor === "Sigen"){
     const m = site.metrics;
@@ -903,7 +1033,7 @@ function buildDetailBody(site){
     }
 
     const ev = evaluate(site);
-    if(ev.state === "issue"){
+    if(ev.state === "issue" || ev.state === "fault"){
       html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
     html += `<div class="heuristic-note">⚠️ Sigenergy alarm ต้องใช้ MQTT subscription แบบ real-time ซึ่งยังไม่ได้เชื่อมต่อ — สถานะข้างต้นประเมินจากข้อมูลกำลังไฟเท่านั้น</div>`;
@@ -918,11 +1048,10 @@ function openDetail(site){
 
   const stats = cardStats(site);
   const ev = evaluate(site);
-  const pillClass = ev.state === "ok" ? "ok" : ev.state === "issue" ? "issue" : "stale";
-  const pillText = ev.state === "ok" ? "ปกติ" : ev.state === "issue" ? "ต้องตรวจสอบ" : ev.state === "stale" ? "ล่าช้า" : "ไม่มีข้อมูล";
+  const pill = pillInfo(ev);
 
   const topStatsHtml = stats.map(s=>`<div class="stat"><div class="val">${s.val}</div><div class="lbl">${s.label}<span class="unit"> (${s.unit})</span></div></div>`).join("")
-    + `<div class="stat" style="display:flex;flex-direction:column;justify-content:center;"><div class="status-pill ${pillClass}" style="justify-content:center;"><span class="dot"></span>${pillText}</div></div>`;
+    + `<div class="stat" style="display:flex;flex-direction:column;justify-content:center;"><div class="status-pill ${pill.cls}" style="justify-content:center;"><span class="dot"></span>${pill.text}</div></div>`;
 
   document.getElementById("modalContent").innerHTML = `
     <div class="modal-header">
@@ -967,7 +1096,7 @@ async function refreshData(){
     allSites = await loadAllSites();
     allSites.sort((a,b)=>{
       const ea = evaluate(a).state, eb = evaluate(b).state;
-      const rank = s => s==="issue" ? 0 : s==="stale" ? 1 : s==="nodata" ? 2 : 3;
+      const rank = s => s==="fault" ? 0 : s==="partial" ? 1 : s==="issue" ? 2 : s==="offline" ? 3 : 4;
       if(rank(ea) !== rank(eb)) return rank(ea)-rank(eb);
       return a.name.localeCompare(b.name, "th");
     });
