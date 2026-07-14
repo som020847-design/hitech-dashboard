@@ -358,7 +358,7 @@
 
 <div id="searchBar">
   <span id="searchIcon">🔍</span>
-  <input id="searchInput" type="text" placeholder="ค้นหาชื่อ...">
+  <input id="searchInput" type="text" placeholder="ค้นหา...">
   <button id="searchClear" style="display:none;">✕</button>
 </div>
 
@@ -474,7 +474,7 @@ function parseTimestamp(s){
 async function loadAllSites(){
   const [
     huaweiLatest, huaweiStations, huaweiAlarmsRaw,
-    deyeAll, deyeStations, deyeDeviceStatus,
+    deyeAll, deyeStations, deyeDeviceStatus, deyeAlertsRaw,
     sigenInvAll, sigenRealtimeAll, sigenStations
   ] = await Promise.all([
     fetchSheet("Latest_Data"),
@@ -483,6 +483,7 @@ async function loadAllSites(){
     fetchSheet("Deye_Realtime_Data"),
     fetchSheet("Deye_Station_List").catch(()=>[]),
     fetchSheet("Deye_Device_Status").catch(()=>[]),
+    fetchSheet("Deye_Alerts").catch(()=>[]),
     fetchSheet("Sigen_Inverter_Data"),
     fetchSheet("Sigen_Realtime_Data").catch(()=>[]),
     fetchSheet("Sigen_Station_List").catch(()=>[])
@@ -554,6 +555,32 @@ async function loadAllSites(){
     });
   }
 
+  // ---- Deye: real active alerts from /station/alertList (latest polling batch only) ----
+  let latestDeyeAlertMap = new Map();
+  if (deyeAlertsRaw.length){
+    const times = deyeAlertsRaw.map(r => parseTimestamp(r.timestamp_polled)).filter(Boolean);
+    if (times.length){
+      const latestTime = Math.max(...times.map(d => d.getTime()));
+      const latestStr = deyeAlertsRaw.find(r => {
+        const t = parseTimestamp(r.timestamp_polled);
+        return t && t.getTime() === latestTime;
+      })?.timestamp_polled;
+
+      deyeAlertsRaw
+        .filter(r => r.timestamp_polled === latestStr && r.stationId)
+        .forEach(r => {
+          if (!latestDeyeAlertMap.has(r.stationId)) latestDeyeAlertMap.set(r.stationId, []);
+          latestDeyeAlertMap.get(r.stationId).push({
+            name: r.alertName || "Alert",
+            deviceType: r.deviceType || "",
+            impact: String(r.impact) === "1",
+            level: r.level || "",
+            startTime: r.alertStartTime || ""
+          });
+        });
+    }
+  }
+
   // ---- Sigen: history of total PV power per system (sum of devices at each timestamp) ----
   const sigenTsPower = new Map();
   for(const r of sigenInvAll){
@@ -610,6 +637,7 @@ async function loadAllSites(){
       livePowerKw: num(r.active_power_kW),
       powerHistory: deyeHistoryMap.get(r.stationId) || [],
       deviceStatusList: deyeDeviceMap.get(r.stationId) || [],
+      deviceAlerts: latestDeyeAlertMap.get(r.stationId) || [],
       metrics:{
         activePower: num(r.active_power_kW),
         consumptionPower: num(r.consumption_power_kW),
@@ -715,6 +743,15 @@ function evaluate(site){
     return {state:"fault", reason:"สถานะผิดปกติ"};
   }
 
+  // Deye: real active alerts from station/alertList (most authoritative signal we have)
+  if(site.vendor === "Deye" && site.deviceAlerts && site.deviceAlerts.length){
+    const faultAlerts = site.deviceAlerts.filter(a => a.impact);
+    if(faultAlerts.length){
+      return {state:"fault", reason: faultAlerts.map(a=>a.name).join(", ")};
+    }
+    return {state:"warning", reason: site.deviceAlerts.map(a=>a.name).join(", ")};
+  }
+
   // Deye: real per-device connectStatus (matches Deye Cloud's own Online/Partially Offline/Offline)
   if(site.vendor === "Deye" && site.deviceStatusList && site.deviceStatusList.length){
     const total = site.deviceStatusList.length;
@@ -738,6 +775,7 @@ function pillInfo(ev){
   if(ev.state === "ok") return {cls:"ok", text:"ปกติ"};
   if(ev.state === "fault") return {cls:"issue", text:"ผิดพลาด"};
   if(ev.state === "issue") return {cls:"issue", text:"ต้องตรวจสอบ"};
+  if(ev.state === "warning") return {cls:"warning", text:"แจ้งเตือน"};
   if(ev.state === "partial") return {cls:"warning", text:"เชื่อมต่อไม่ครบ"};
   if(ev.state === "offline") return {cls:"stale", text:"ออฟไลน์"};
   return {cls:"stale", text:"ไม่ทราบสถานะ"};
@@ -802,7 +840,7 @@ function buildCard(site){
     : `<div class="stats"><div class="stat"><div class="val" style="font-size:13px;color:var(--sub);">ยังไม่มีข้อมูล</div></div></div>`;
 
   const card = document.createElement("div");
-  card.className = "card" + (ev.state === "fault" || ev.state === "issue" ? " issue" : "") + (ev.state === "partial" ? " warning" : "");
+  card.className = "card" + (ev.state === "fault" || ev.state === "issue" ? " issue" : "") + (ev.state === "partial" || ev.state === "warning" ? " warning" : "");
   card.innerHTML = `
     <div class="vendor-dot ${site.vendor}"></div>
     <div class="card-top">
@@ -840,14 +878,14 @@ function buildDots(){
 function renderRibbon(){
   const ribbon = document.getElementById("ribbon");
   const track = document.getElementById("ribbonTrack");
-  const issues = allSites.map(s=>({site:s, ev:evaluate(s)})).filter(x=>x.ev.state==="fault" || x.ev.state==="issue" || x.ev.state==="partial");
+  const issues = allSites.map(s=>({site:s, ev:evaluate(s)})).filter(x=>x.ev.state==="fault" || x.ev.state==="issue" || x.ev.state==="partial" || x.ev.state==="warning");
   if(!issues.length){ ribbon.classList.remove("show"); return; }
   ribbon.classList.add("show");
   track.innerHTML = "";
   const doubled = [...issues, ...issues];
   doubled.forEach(x=>{
     const span = document.createElement("span");
-    const tag = x.ev.state === "fault" ? "ผิดพลาด" : x.ev.state === "partial" ? "เชื่อมต่อไม่ครบ" : "ต้องตรวจสอบ";
+    const tag = x.ev.state === "fault" ? "ผิดพลาด" : x.ev.state === "partial" ? "เชื่อมต่อไม่ครบ" : x.ev.state === "warning" ? "แจ้งเตือน" : "ต้องตรวจสอบ";
     span.textContent = `${x.site.name} [${tag}] — ${x.ev.reason}`;
     span.addEventListener("click", ()=> openDetail(x.site));
     track.appendChild(span);
@@ -856,7 +894,7 @@ function renderRibbon(){
 
 function renderFooter(){
   const totalPower = allSites.reduce((a,s)=> a + (s.livePowerKw || 0), 0);
-  const issueCount = allSites.filter(s=>{const st=evaluate(s).state; return st==="fault"||st==="issue"||st==="partial";}).length;
+  const issueCount = allSites.filter(s=>{const st=evaluate(s).state; return st==="fault"||st==="issue"||st==="partial"||st==="warning";}).length;
   const offlineCount = allSites.filter(s=>evaluate(s).state==="offline").length;
   document.getElementById("totSites").textContent = allSites.length;
   document.getElementById("totPower").textContent = totalPower.toFixed(1);
@@ -983,6 +1021,20 @@ function buildDetailBody(site){
     html += row("กำลังการผลิตติดตั้ง", fmtNum(site.capacityKw,1), "kW");
     html += `</div>`;
 
+    if(site.deviceAlerts && site.deviceAlerts.length){
+      html += `<div class="modal-section-title">Alert ที่กำลัง Active (${site.deviceAlerts.length})</div>`;
+      site.deviceAlerts.forEach(a=>{
+        html += `
+          <div class="alarm-card" style="${a.impact ? '' : 'background:var(--yellow-soft);'}">
+            <div class="aname" style="${a.impact ? '' : 'color:#7a5a00;'}">${a.name}${a.impact ? ' · กระทบการผลิต' : ' · ไม่กระทบการผลิต'}</div>
+            ${a.deviceType ? `<div class="arow" style="${a.impact ? '' : 'color:#8a6224;'}"><b>อุปกรณ์:</b> ${a.deviceType}</div>` : ""}
+            ${a.startTime ? `<div class="arow" style="${a.impact ? '' : 'color:#8a6224;'}"><b>เริ่มเกิด:</b> ${a.startTime}</div>` : ""}
+          </div>`;
+      });
+    } else {
+      html += `<div class="modal-section-title">Alert</div><div class="no-alarm-note">ไม่มี alert active อยู่ตอนนี้ (ข้อมูลจาก Deye Alert API จริง)</div>`;
+    }
+
     if(site.deviceStatusList && site.deviceStatusList.length){
       html += `<div class="modal-section-title">สถานะการเชื่อมต่ออุปกรณ์ (${site.deviceStatusList.length})</div>`;
       site.deviceStatusList.forEach(d=>{
@@ -995,10 +1047,10 @@ function buildDetailBody(site){
     }
 
     const ev = evaluate(site);
-    if(ev.state === "issue" || ev.state === "fault" || ev.state === "partial"){
+    if(ev.state === "issue" || ev.state === "fault" || ev.state === "partial" || ev.state === "warning"){
       html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
-    html += `<div class="heuristic-note">ℹ️ สถานะ "เชื่อมต่อไม่ครบ/ออฟไลน์" มาจากข้อมูล connectStatus จริงของแต่ละอุปกรณ์ (แหล่งเดียวกับที่ Deye Cloud ใช้) ส่วนสถานะ "ต้องตรวจสอบ" (กำลังไฟเป็น 0 ต่อเนื่อง) ยังเป็นการประเมิน heuristic เพราะ Deye ไม่มี Alarm API สาธารณะให้ดึงรายละเอียดเพิ่ม</div>`;
+    html += `<div class="heuristic-note">ℹ️ "Alert" และ "เชื่อมต่อไม่ครบ/ออฟไลน์" มาจากข้อมูลจริงของ Deye (Alert API + connectStatus รายอุปกรณ์) ส่วนสถานะ "ต้องตรวจสอบ" (กำลังไฟเป็น 0 ต่อเนื่อง 15 นาที) ยังเป็นการประเมิน heuristic สำรอง ใช้เฉพาะตอนไม่มี alert/connectivity ผิดปกติให้เห็น</div>`;
 
   } else if(site.vendor === "Sigen"){
     const m = site.metrics;
@@ -1096,7 +1148,7 @@ async function refreshData(){
     allSites = await loadAllSites();
     allSites.sort((a,b)=>{
       const ea = evaluate(a).state, eb = evaluate(b).state;
-      const rank = s => s==="fault" ? 0 : s==="partial" ? 1 : s==="issue" ? 2 : s==="offline" ? 3 : 4;
+      const rank = s => s==="fault" ? 0 : s==="warning" ? 1 : s==="partial" ? 2 : s==="issue" ? 3 : s==="offline" ? 4 : 5;
       if(rank(ea) !== rank(eb)) return rank(ea)-rank(eb);
       return a.name.localeCompare(b.name, "th");
     });
