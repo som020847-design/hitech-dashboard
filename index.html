@@ -204,6 +204,9 @@
   .card.warning .stat .val{color:#8a6100;}
   .card.warning .stat .lbl{color:#a37a1e;}
 
+  .stats.stats-3 .stat .val{font-size:14.5px;}
+  .stats.stats-3 .stat{padding:10px 6px;}
+
   .card-bottom{
     display:flex;justify-content:space-between;align-items:center;margin-top:10px;
   }
@@ -329,6 +332,7 @@
     .stat{padding:9px 6px;}
     .stat .val{font-size:15px;}
     .stat .lbl{font-size:9px;}
+    .stats.stats-3 .stat .val{font-size:12.5px;}
     .status-pill{font-size:10px;padding:4px 8px;}
     .updated{font-size:9px;}
     footer{flex-direction:column;align-items:flex-start;gap:10px;padding:14px 18px 26px;}
@@ -803,6 +807,8 @@ function cardStats(site){
   if(site.vendor === "Huawei"){
     if(site.metrics.dayPower !== null) list.push({label:"ผลผลิตวันนี้", val:fmtSmart(site.metrics.dayPower), unit:"kWh"});
     if(site.capacityKw !== null) list.push({label:"กำลังติดตั้ง", val:fmtSmart(site.capacityKw), unit:"kW"});
+    if(site.metrics.savedCost !== null) list.push({label:"ประหยัดวันนี้", val:fmtSmart(site.metrics.savedCost), unit:"บาท"});
+    return list.slice(0,3);
   } else if(site.vendor === "Deye"){
     if(site.livePowerKw !== null) list.push({label:"กำลังไฟ", val:fmtSmart(site.livePowerKw), unit:"kW"});
     if(site.capacityKw !== null) list.push({label:"กำลังติดตั้ง", val:fmtSmart(site.capacityKw), unit:"kW"});
@@ -836,7 +842,7 @@ function buildCard(site){
   const pill = pillInfo(ev);
 
   const statsHtml = stats.length
-    ? `<div class="stats">${stats.map(s=>`<div class="stat"><div class="val">${s.val}</div><div class="lbl">${s.label}<span class="unit"> (${s.unit})</span></div></div>`).join("")}</div>`
+    ? `<div class="stats${stats.length>=3?' stats-3':''}">${stats.map(s=>`<div class="stat"><div class="val">${s.val}</div><div class="lbl">${s.label}<span class="unit"> (${s.unit})</span></div></div>`).join("")}</div>`
     : `<div class="stats"><div class="stat"><div class="val" style="font-size:13px;color:var(--sub);">ยังไม่มีข้อมูล</div></div></div>`;
 
   const card = document.createElement("div");
