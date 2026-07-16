@@ -478,7 +478,7 @@ function parseTimestamp(s){
 async function loadAllSites(){
   const [
     huaweiLatest, huaweiStations, huaweiAlarmsRaw,
-    deyeAll, deyeStations, deyeDeviceStatus, deyeAlertsRaw,
+    deyeAll, deyeStations, deyeDeviceStatus, deyeAlertsRaw, deyeDailyEnergy,
     sigenInvAll, sigenRealtimeAll, sigenStations
   ] = await Promise.all([
     fetchSheet("Latest_Data"),
@@ -488,6 +488,7 @@ async function loadAllSites(){
     fetchSheet("Deye_Station_List").catch(()=>[]),
     fetchSheet("Deye_Device_Status").catch(()=>[]),
     fetchSheet("Deye_Alerts").catch(()=>[]),
+    fetchSheet("Deye_Daily_Energy").catch(()=>[]),
     fetchSheet("Sigen_Inverter_Data"),
     fetchSheet("Sigen_Realtime_Data").catch(()=>[]),
     fetchSheet("Sigen_Station_List").catch(()=>[])
@@ -533,6 +534,10 @@ async function loadAllSites(){
       return m ? m[1] : "";
     }catch(e){ return ""; }
   }
+
+  // ---- Deye: latest daily energy / self-use savings snapshot per station ----
+  const deyeDailyLatest = latestByKey(deyeDailyEnergy, "stationId");
+  const deyeDailyMap = new Map(deyeDailyLatest.map(r => [r.stationId, r]));
 
   // ---- Deye: history of active power per station (to detect *sustained* zero, not momentary) ----
   const deyeHistoryMap = new Map();
@@ -647,7 +652,12 @@ async function loadAllSites(){
         consumptionPower: num(r.consumption_power_kW),
         wirePower: num(r.wire_power_kW),
         batteryPower: num(r.battery_power_kW),
-        batterySoc: num(r.battery_soc_pct)
+        batterySoc: num(r.battery_soc_pct),
+        dayGeneration: num((deyeDailyMap.get(r.stationId)||{}).day_generation_kWh),
+        daySelfUse: num((deyeDailyMap.get(r.stationId)||{}).day_self_use_kWh),
+        dayPurchase: num((deyeDailyMap.get(r.stationId)||{}).day_purchase_kWh),
+        dayGrid: num((deyeDailyMap.get(r.stationId)||{}).day_grid_kWh),
+        savedCost: num((deyeDailyMap.get(r.stationId)||{}).saved_cost)
       }
     });
   }
@@ -694,7 +704,8 @@ async function loadAllSites(){
         annualEnergy: num(rt.annual_power_generation),
         lifetimeEnergy: num(rt.lifetime_power_generation),
         lifetimeCo2: num(rt.lifetime_co2_ton),
-        lifetimeTree: num(rt.lifetime_tree_equivalent)
+        lifetimeTree: num(rt.lifetime_tree_equivalent),
+        savedCost: num(rt.saved_cost)
       };
     }
     const cap = sigenCapMap.get(key) || {};
@@ -812,9 +823,13 @@ function cardStats(site){
   } else if(site.vendor === "Deye"){
     if(site.livePowerKw !== null) list.push({label:"กำลังไฟ", val:fmtSmart(site.livePowerKw), unit:"kW"});
     if(site.capacityKw !== null) list.push({label:"กำลังติดตั้ง", val:fmtSmart(site.capacityKw), unit:"kW"});
+    if(site.metrics.savedCost !== null && site.metrics.savedCost !== undefined) list.push({label:"ประหยัดวันนี้", val:fmtSmart(site.metrics.savedCost), unit:"บาท"});
+    return list.slice(0,3);
   } else if(site.vendor === "Sigen"){
     if(site.livePowerKw !== null) list.push({label:"กำลังไฟ", val:fmtSmart(site.livePowerKw), unit:"kW"});
     if(site.capacityKw !== null) list.push({label:"กำลังติดตั้ง (PV)", val:fmtSmart(site.capacityKw), unit:"kW"});
+    if(site.metrics.savedCost !== null && site.metrics.savedCost !== undefined) list.push({label:"ประหยัดวันนี้", val:fmtSmart(site.metrics.savedCost), unit:"บาท"});
+    return list.slice(0,3);
   }
   return list.slice(0,2);
 }
@@ -1027,6 +1042,14 @@ function buildDetailBody(site){
     html += row("กำลังการผลิตติดตั้ง", fmtNum(site.capacityKw,1), "kW");
     html += `</div>`;
 
+    html += `<div class="modal-section-title">พลังงานวันนี้ (kWh)</div><div class="detail-rows">`;
+    html += row("ผลผลิตวันนี้", fmtNum(m.dayGeneration,2), "kWh");
+    html += row("ใช้เองวันนี้ (โดยประมาณ)", fmtNum(m.daySelfUse,2), "kWh");
+    html += row("ซื้อไฟจากการไฟฟ้าวันนี้", fmtNum(m.dayPurchase,2), "kWh");
+    html += row("ขายเข้าระบบวันนี้", fmtNum(m.dayGrid,2), "kWh");
+    html += row("ประหยัดวันนี้", fmtNum(m.savedCost,2), "บาท");
+    html += `</div>`;
+
     if(site.deviceAlerts && site.deviceAlerts.length){
       html += `<div class="modal-section-title">Alert ที่กำลัง Active (${site.deviceAlerts.length})</div>`;
       site.deviceAlerts.forEach(a=>{
@@ -1056,7 +1079,7 @@ function buildDetailBody(site){
     if(ev.state === "issue" || ev.state === "fault" || ev.state === "partial" || ev.state === "warning"){
       html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
-    html += `<div class="heuristic-note">ℹ️ "Alert" และ "เชื่อมต่อไม่ครบ/ออฟไลน์" มาจากข้อมูลจริงของ Deye (Alert API + connectStatus รายอุปกรณ์) ส่วนสถานะ "ต้องตรวจสอบ" (กำลังไฟเป็น 0 ต่อเนื่อง 15 นาที) ยังเป็นการประเมิน heuristic สำรอง ใช้เฉพาะตอนไม่มี alert/connectivity ผิดปกติให้เห็น</div>`;
+    html += `<div class="heuristic-note">ℹ️ "Alert" และ "เชื่อมต่อไม่ครบ/ออฟไลน์" มาจากข้อมูลจริงของ Deye (Alert API + connectStatus รายอุปกรณ์) ส่วนสถานะ "ต้องตรวจสอบ" (กำลังไฟเป็น 0 ต่อเนื่อง 15 นาที) ยังเป็นการประเมิน heuristic สำรอง ใช้เฉพาะตอนไม่มี alert/connectivity ผิดปกติให้เห็น<br>ℹ️ "ใช้เองวันนี้"/"ประหยัดวันนี้" คำนวณจาก (ใช้ไฟรวมวันนี้ − ซื้อไฟจากการไฟฟ้าวันนี้) x 4.5 บาท/kWh จากข้อมูล /station/history ของ Deye</div>`;
 
   } else if(site.vendor === "Sigen"){
     const m = site.metrics;
@@ -1068,6 +1091,7 @@ function buildDetailBody(site){
     html += row("ผลผลิตสะสมทั้งหมด", fmtNum(m.lifetimeEnergy,1), "kWh");
     html += row("กำลังการผลิตติดตั้ง (PV)", fmtNum(site.capacityKw,2), "kW");
     html += row("ความจุแบตเตอรี่", fmtNum(site.batteryCapacityKw,2), "kWh");
+    html += row("ประหยัดวันนี้ (โดยประมาณ)", fmtNum(m.savedCost,2), "บาท");
     html += `</div>`;
 
     if(m.lifetimeCo2 !== null || m.lifetimeTree !== null){
@@ -1094,7 +1118,7 @@ function buildDetailBody(site){
     if(ev.state === "issue" || ev.state === "fault"){
       html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
-    html += `<div class="heuristic-note">⚠️ Sigenergy alarm ต้องใช้ MQTT subscription แบบ real-time ซึ่งยังไม่ได้เชื่อมต่อ — สถานะข้างต้นประเมินจากข้อมูลกำลังไฟเท่านั้น</div>`;
+    html += `<div class="heuristic-note">⚠️ Sigenergy alarm ต้องใช้ MQTT subscription แบบ real-time ซึ่งยังไม่ได้เชื่อมต่อ — สถานะข้างต้นประเมินจากข้อมูลกำลังไฟเท่านั้น<br>ℹ️ "ประหยัดวันนี้" คำนวณจากผลผลิตรวมทั้งหมด x 4.5 บาท/kWh (ไม่ได้แยกว่าใช้เองเท่าไหร่ ขายเข้าระบบเท่าไหร่ เพราะ Sigen API ไม่ได้แยกให้)</div>`;
   }
   return html;
 }
