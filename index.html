@@ -98,6 +98,15 @@
   }
   #searchToggleBtn:hover{transform:translateY(-2px) scale(1.08) rotate(-6deg);}
   #searchToggleBtn:active{transform:scale(.92) rotate(0deg);transition-duration:.12s;}
+  #darkModeToggle{
+    border:none;background:linear-gradient(180deg, var(--gold) 0%, var(--orange-deep) 100%);color:#fff;
+    width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    box-shadow:0 6px 16px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.4);
+    transition:transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .22s ease;
+  }
+  #darkModeToggle:hover{transform:translateY(-2px) scale(1.08);}
+  #darkModeToggle:active{transform:scale(.92);transition-duration:.12s;}
   #searchBar{
     position:absolute;top:calc(100% + 12px);right:0;
     display:none;align-items:center;gap:10px;
@@ -248,7 +257,6 @@
     font-size:15px;font-weight:700;line-height:1.28;color:var(--ink);
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   }
-  .vendor-label{font-size:11px;font-weight:600;color:var(--sub);margin-top:3px;}
 
   .stats{display:flex;gap:10px;margin-top:10px;}
   .stat{
@@ -434,7 +442,6 @@
     .card{padding:14px 14px 12px;}
     .card:hover{transform:none;}
     .site-name{font-size:14px;}
-    .vendor-label{font-size:10px;}
     .stats{gap:8px;}
     .stat{padding:9px 6px;}
     .stat .val{font-size:15px;}
@@ -450,6 +457,176 @@
     .modal-header h2{font-size:17px;}
     .modal-stats .stat{flex:1 1 100px;}
   }
+
+  /* ============================================================
+     DARK MODE — EDM strobe theme
+     Flash rate kept under ~2.5 flashes/sec (period >=400ms) and uses
+     color/hue shifts rather than full black/white luminance strobing,
+     to stay clear of the ~3Hz photosensitive-seizure danger zone.
+     ============================================================ */
+  body.dark-mode{
+    --cream:#0a0713;
+    --panel:#161027;
+    --ink:#f3edff;
+    --sub:#b6a6dd;
+    --line:#2c2248;
+    --amber-soft:#211a3a;
+    --ok-soft:#123322;
+    --issue-soft:#3a1030;
+    --stale-soft:#211a38;
+    --gold-soft:#241a3a;
+  }
+  body.dark-mode{
+    background:
+      radial-gradient(1200px 700px at 10% 0%, rgba(255,0,200,.18) 0%, transparent 55%),
+      radial-gradient(1000px 600px at 95% 10%, rgba(0,230,255,.16) 0%, transparent 50%),
+      radial-gradient(900px 600px at 50% 100%, rgba(160,0,255,.16) 0%, transparent 55%),
+      var(--cream);
+    animation: edmHueShift 6s linear infinite;
+  }
+  @keyframes edmHueShift{
+    0%{filter:hue-rotate(0deg);}
+    100%{filter:hue-rotate(360deg);}
+  }
+  body.dark-mode header{
+    background:rgba(20,14,35,.65);
+    border:1px solid rgba(255,60,220,.4);
+    box-shadow:0 0 22px rgba(255,40,210,.45), 0 0 44px rgba(0,220,255,.25), inset 0 1px 0 rgba(255,255,255,.06);
+    animation: edmBorderFlash .45s steps(1) infinite;
+  }
+  @keyframes edmBorderFlash{
+    0%,100%{box-shadow:0 0 22px rgba(255,40,210,.5), 0 0 44px rgba(0,220,255,.28), inset 0 1px 0 rgba(255,255,255,.06);}
+    50%{box-shadow:0 0 26px rgba(0,220,255,.55), 0 0 50px rgba(255,40,210,.32), inset 0 1px 0 rgba(255,255,255,.06);}
+  }
+  body.dark-mode .brand img.logo{filter:drop-shadow(0 0 10px rgba(255,60,220,.7)) drop-shadow(0 0 18px rgba(0,220,255,.4));}
+  body.dark-mode #clock, body.dark-mode .brand h1{color:#fff;}
+  body.dark-mode #pauseBtn, body.dark-mode #searchToggleBtn, body.dark-mode #darkModeToggle{
+    background:linear-gradient(135deg,#ff2fd6,#7b2fff 50%,#00e6ff);
+    box-shadow:0 0 14px rgba(255,40,210,.6), 0 0 24px rgba(0,220,255,.35);
+  }
+  body.dark-mode #ribbon{
+    background:linear-gradient(120deg,#ff2fd6,#7b2fff,#00e6ff,#ff2fd6);
+    background-size:300% 100%;
+    color:#fff;
+    animation: edmRibbonSweep 1.6s linear infinite, edmRibbonFlash .4s steps(1) infinite;
+  }
+  @keyframes edmRibbonSweep{from{background-position:0% 0;}to{background-position:300% 0;}}
+  @keyframes edmRibbonFlash{
+    0%,100%{box-shadow:0 0 20px rgba(255,40,210,.55), inset 0 1px 0 rgba(255,255,255,.3);}
+    50%{box-shadow:0 0 34px rgba(0,220,255,.7), inset 0 1px 0 rgba(255,255,255,.4);}
+  }
+  body.dark-mode .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    box-shadow:0 2px 4px rgba(0,0,0,.4), 0 14px 30px rgba(0,0,0,.5);
+  }
+  body.dark-mode .card::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:4px;
+    background:linear-gradient(90deg,#ff2fd6,#00e6ff,#ffee00,#ff2fd6);
+    background-size:300% 100%;
+    animation: edmCardSweep 1.4s linear infinite, edmCardFlash .5s steps(1) infinite;
+  }
+  @keyframes edmCardSweep{from{background-position:0% 0;}to{background-position:300% 0;}}
+  @keyframes edmCardFlash{0%,100%{opacity:.75;}50%{opacity:1;}}
+  body.dark-mode .stat{
+    background:linear-gradient(180deg, #1e1735 0%, var(--amber-soft) 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 3px 10px rgba(0,0,0,.35);
+  }
+  body.dark-mode .stat .val{color:#00e6ff;text-shadow:0 0 8px rgba(0,220,255,.6);}
+  body.dark-mode .stat .lbl{color:#d6a6ff;}
+  body.dark-mode .card.issue .stat .val{color:#ff5ac8;text-shadow:0 0 8px rgba(255,40,210,.7);}
+  body.dark-mode .card.warning .stat .val{color:#ffee55;text-shadow:0 0 8px rgba(255,230,50,.6);}
+  body.dark-mode .site-name{color:#fff;}
+  body.dark-mode .updated{color:#8a7ab0;}
+  body.dark-mode .status-pill.ok{background:#0f2e20;color:#4dffb0;}
+  body.dark-mode .status-pill.ok .dot{background:#4dffb0;box-shadow:0 0 6px #4dffb0;}
+  body.dark-mode .status-pill.issue{background:#3a1030;color:#ff5ac8;}
+  body.dark-mode .status-pill.issue .dot{background:#ff5ac8;box-shadow:0 0 6px #ff5ac8;}
+  body.dark-mode .status-pill.warning{background:#3a2f0a;color:#ffee55;}
+  body.dark-mode .status-pill.warning .dot{background:#ffee55;box-shadow:0 0 6px #ffee55;}
+  body.dark-mode .status-pill.stale{background:#221c38;color:#a698c8;}
+  body.dark-mode #searchBar{background:#181229;border-color:var(--line);}
+  body.dark-mode #searchInput{color:#fff;}
+  body.dark-mode .totals, body.dark-mode #loading{color:#b6a6dd;}
+  body.dark-mode .totals b{color:#fff;}
+  body.dark-mode .dots span{background:var(--line);}
+  body.dark-mode .dots span.active{background:#ff2fd6;box-shadow:0 0 8px #ff2fd6;}
+  body.dark-mode #modalBox{background:rgba(22,16,39,.94);border-color:var(--line);}
+  body.dark-mode .detail-row{background:var(--panel);}
+  body.dark-mode .detail-row .v{color:#fff;}
+  body.dark-mode .device-card, body.dark-mode .no-alarm-note, body.dark-mode .heuristic-note{background:var(--amber-soft);color:#d6c6ff;}
+  body.dark-mode .icon-stat{background:var(--panel);border-color:var(--line);}
+  body.dark-mode .icon-stat .icon-info .v{color:#fff;}
+  body.dark-mode .gauge-wrap svg text{fill:#fff !important;}
+
+  /* ============================================================
+     PARTY MODE UPGRADE — full rainbow, confetti, disco ball 🎉
+     Flash rate still capped ~2.5/sec on brightness; the extra motion
+     (spin/float/wiggle) is safe since it's not luminance strobing.
+     ============================================================ */
+  #discoBall{
+    display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);
+    font-size:30px;z-index:100;pointer-events:none;
+    animation: discoSpin 2.2s linear infinite, discoBob 1.1s ease-in-out infinite;
+    filter:drop-shadow(0 0 14px rgba(255,255,255,.8));
+  }
+  body.dark-mode #discoBall{display:block;}
+  @keyframes discoSpin{from{transform:translateX(-50%) rotate(0deg);}to{transform:translateX(-50%) rotate(360deg);}}
+  @keyframes discoBob{0%,100%{margin-top:0;}50%{margin-top:8px;}}
+
+  #confettiLayer{
+    display:none;position:fixed;inset:0;pointer-events:none;z-index:99;overflow:hidden;
+  }
+  body.dark-mode #confettiLayer{display:block;}
+  .confetti-piece{
+    position:absolute;top:-20px;
+    width:8px;height:14px;
+    opacity:.85;
+    animation-name: confettiFall, confettiSway;
+    animation-timing-function: linear, ease-in-out;
+    animation-iteration-count: infinite, infinite;
+  }
+  @keyframes confettiFall{from{transform:translateY(-20px) rotate(0deg);}to{transform:translateY(110vh) rotate(720deg);}}
+  @keyframes confettiSway{0%,100%{margin-left:0;}50%{margin-left:40px;}}
+
+  body.dark-mode{
+    background:
+      radial-gradient(1200px 700px at 10% 0%, rgba(255,0,200,.22) 0%, transparent 55%),
+      radial-gradient(1000px 600px at 95% 10%, rgba(0,230,255,.2) 0%, transparent 50%),
+      radial-gradient(900px 600px at 50% 100%, rgba(160,0,255,.2) 0%, transparent 55%),
+      radial-gradient(800px 500px at 80% 90%, rgba(255,230,0,.14) 0%, transparent 50%),
+      var(--cream);
+    animation: edmHueShift 4s linear infinite;
+  }
+  body.dark-mode .brand h1, body.dark-mode #clock{
+    background:linear-gradient(90deg,#ff2fd6,#ffee00,#00e6ff,#7b2fff,#ff2fd6);
+    background-size:300% auto;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation: rainbowText 2.5s linear infinite;
+  }
+  @keyframes rainbowText{from{background-position:0% 0;}to{background-position:300% 0;}}
+  body.dark-mode #pauseBtn, body.dark-mode #searchToggleBtn, body.dark-mode #darkModeToggle{
+    background:linear-gradient(135deg,#ff2fd6,#ffee00 33%,#00e6ff 66%,#7b2fff);
+    background-size:300% 300%;
+    animation: rainbowShift 1.8s linear infinite, wiggle 1.4s ease-in-out infinite;
+  }
+  @keyframes rainbowShift{from{background-position:0% 0;}to{background-position:300% 300%;}}
+  @keyframes wiggle{0%,100%{rotate:0deg;}25%{rotate:-8deg;}75%{rotate:8deg;}}
+  body.dark-mode .card::before{
+    background:linear-gradient(90deg,#ff2fd6,#ffee00,#00e6ff,#7b2fff,#ff2fd6);
+    height:5px;
+  }
+  body.dark-mode .card:hover{
+    transform:translateY(-6px) scale(1.02) rotate(-.4deg);
+  }
+  body.dark-mode .vendor-chip-badge{
+    animation: rainbowShift 2s linear infinite;
+    background:linear-gradient(135deg,#ff2fd6,#00e6ff) !important;
+    background-size:200% 200%;
+  }
+  body.dark-mode #ribbon .siren, body.dark-mode .card-alert-banner .banner-dot{
+    animation: dotPulse 1.6s ease-out infinite, wiggle .5s ease-in-out infinite;
+  }
 </style>
 </head>
 <body>
@@ -461,6 +638,7 @@
   <div class="header-right">
     <div id="clock">--:--:-- <small id="dateLine">-</small></div>
     <button id="pauseBtn">⏸ หยุดเลื่อน</button>
+    <button id="darkModeToggle" title="โหมดมืด EDM">🌙</button>
     <button id="searchToggleBtn" title="ค้นหา">🔍</button>
     <div id="searchBar">
       <span id="searchIcon">🔍</span>
@@ -494,6 +672,9 @@
   </div>
   <div class="dots" id="dots"></div>
 </footer>
+
+<div id="discoBall">🪩</div>
+<div id="confettiLayer"></div>
 
 <div id="modalOverlay">
   <div id="modalBox">
@@ -824,22 +1005,10 @@ async function loadAllSites(){
 /* ============================================================
    ตัดสิน "ปัญหา"
    ============================================================ */
-function sustainedZero(history, thresholdKw=0.05, minGapMin=10, maxGapMin=45){
-  if(!history || history.length < 2) return false; // not enough history yet — don't alarm prematurely
-  const last = history[history.length-1];
-  const prev = history[history.length-2];
-  if(last.val === null || prev.val === null) return false;
-  if(last.val >= thresholdKw || prev.val >= thresholdKw) return false;
-  const gapMin = (last.t - prev.t) / 60000;
-  if(gapMin < minGapMin || gapMin > maxGapMin) return false;
-  return true;
-}
 
-// states: "ok" | "fault" (confirmed device/vendor fault) | "offline" (no/stale data or comms alarm) | "issue" (uncertain heuristic — Deye/Sigen zero-power guess)
+// states: "ok" | "fault" (confirmed device/vendor fault) | "offline" (no/stale data or comms alarm) | "partial" (some devices disconnected) | "warning" (non-critical alert)
 function evaluate(site){
   const now = new Date();
-  const hour = now.getHours();
-  const isDaytime = hour >= DAY_START_HOUR && hour < DAY_END_HOUR;
 
   if(!site.lastUpdated){
     return {state:"offline", reason:"ไม่มีข้อมูล"};
@@ -885,9 +1054,6 @@ function evaluate(site){
     }
   }
 
-  if(isDaytime && sustainedZero(site.powerHistory)){
-    return {state:"issue", reason:"กำลังไฟฟ้าเป็น 0 ต่อเนื่องเกิน 15 นาที"};
-  }
   return {state:"ok", reason:""};
 }
 
@@ -979,7 +1145,6 @@ function buildCard(site){
     <div class="vendor-chip-badge ${site.vendor}">${site.vendor}</div>
     <div class="card-top">
       <div class="site-name">${site.name}</div>
-      <div class="vendor-label">${site.vendor}</div>
     </div>
     ${statsHtml}
     <div class="card-bottom">
@@ -1076,6 +1241,40 @@ document.getElementById("pauseBtn").addEventListener("click", ()=>{
   paused = !paused;
   document.getElementById("pauseBtn").textContent = paused ? "▶ เล่นต่อ" : "⏸ หยุดเลื่อน";
   resetRotateTimer();
+});
+
+const darkModeToggle = document.getElementById("darkModeToggle");
+const confettiLayer = document.getElementById("confettiLayer");
+const CONFETTI_COLORS = ["#ff2fd6","#ffee00","#00e6ff","#7b2fff","#4dffb0","#ff8a00"];
+let confettiSpawned = false;
+function spawnConfetti(){
+  if(confettiSpawned) return;
+  confettiSpawned = true;
+  for(let i=0;i<45;i++){
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = (Math.random()*100) + "vw";
+    piece.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+    piece.style.borderRadius = Math.random() > .5 ? "50%" : "2px";
+    const fallDuration = 3.5 + Math.random()*3.5;
+    const swayDuration = 1.5 + Math.random()*1.5;
+    piece.style.animationDuration = `${fallDuration}s, ${swayDuration}s`;
+    piece.style.animationDelay = `${Math.random()*5}s, ${Math.random()*2}s`;
+    confettiLayer.appendChild(piece);
+  }
+}
+function applyDarkMode(on){
+  document.body.classList.toggle("dark-mode", on);
+  darkModeToggle.textContent = on ? "☀️" : "🌙";
+  darkModeToggle.title = on ? "โหมดสว่าง" : "โหมดมืด EDM";
+  if(on) spawnConfetti();
+  try{ localStorage.setItem("hitech_dark_mode", on ? "1" : "0"); }catch(e){}
+}
+try{
+  applyDarkMode(localStorage.getItem("hitech_dark_mode") === "1");
+}catch(e){}
+darkModeToggle.addEventListener("click", ()=>{
+  applyDarkMode(!document.body.classList.contains("dark-mode"));
 });
 
 const searchToggleBtn = document.getElementById("searchToggleBtn");
@@ -1206,7 +1405,7 @@ function buildDetailBody(site){
     if(ev.state === "issue" || ev.state === "fault" || ev.state === "partial" || ev.state === "warning"){
       html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
-    html += `<div class="heuristic-note">ℹ️ "Alert" และ "เชื่อมต่อไม่ครบ/ออฟไลน์" มาจากข้อมูลจริงของ Deye (Alert API + connectStatus รายอุปกรณ์) ส่วนสถานะ "ต้องตรวจสอบ" (กำลังไฟเป็น 0 ต่อเนื่อง 15 นาที) ยังเป็นการประเมิน heuristic สำรอง ใช้เฉพาะตอนไม่มี alert/connectivity ผิดปกติให้เห็น<br>ℹ️ "ใช้เองวันนี้"/"ประหยัดวันนี้" คำนวณจาก (ใช้ไฟรวมวันนี้ − ซื้อไฟจากการไฟฟ้าวันนี้) x 4.5 บาท/kWh จากข้อมูล /station/history ของ Deye</div>`;
+    html += `<div class="heuristic-note">ℹ️ "Alert" และ "เชื่อมต่อไม่ครบ/ออฟไลน์" มาจากข้อมูลจริงของ Deye (Alert API + connectStatus รายอุปกรณ์) เท่านั้น ไม่มีการเดาสถานะจากค่ากำลังไฟอีกต่อไป<br>ℹ️ "ใช้เองวันนี้"/"ประหยัดวันนี้" คำนวณจาก (ใช้ไฟรวมวันนี้ − ซื้อไฟจากการไฟฟ้าวันนี้) x 4.5 บาท/kWh จากข้อมูล /station/history ของ Deye</div>`;
 
   } else if(site.vendor === "Sigen"){
     const m = site.metrics;
@@ -1245,7 +1444,7 @@ function buildDetailBody(site){
     if(ev.state === "issue" || ev.state === "fault"){
       html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
-    html += `<div class="heuristic-note">⚠️ Sigenergy alarm ต้องใช้ MQTT subscription แบบ real-time ซึ่งยังไม่ได้เชื่อมต่อ — สถานะข้างต้นประเมินจากข้อมูลกำลังไฟเท่านั้น<br>ℹ️ "ประหยัดวันนี้" คำนวณจากผลผลิตรวมทั้งหมด x 4.5 บาท/kWh (ไม่ได้แยกว่าใช้เองเท่าไหร่ ขายเข้าระบบเท่าไหร่ เพราะ Sigen API ไม่ได้แยกให้)</div>`;
+    html += `<div class="heuristic-note">⚠️ Sigenergy alarm ต้องใช้ MQTT subscription แบบ real-time ซึ่งยังไม่ได้เชื่อมต่อ — ตอนนี้ยังไม่มีการตรวจจับ fault อัตโนมัติสำหรับ Sigen จนกว่าจะเชื่อมต่อ MQTT<br>ℹ️ "ประหยัดวันนี้" คำนวณจากผลผลิตรวมทั้งหมด x 4.5 บาท/kWh (ไม่ได้แยกว่าใช้เองเท่าไหร่ ขายเข้าระบบเท่าไหร่ เพราะ Sigen API ไม่ได้แยกให้)</div>`;
   }
   return html;
 }
