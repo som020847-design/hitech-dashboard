@@ -38,10 +38,7 @@
   html,body{height:100%;}
   body{
     margin:0;
-    background:
-      radial-gradient(1200px 600px at 8% -10%, rgba(255,180,90,.16) 0%, transparent 55%),
-      radial-gradient(900px 500px at 100% 0%, rgba(245,162,62,.14) 0%, transparent 50%),
-      var(--cream);
+    background:var(--cream);
     color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI","Noto Sans Thai",sans-serif;
     overflow:hidden;
@@ -49,7 +46,47 @@
     flex-direction:column;
     height:100vh;
     -webkit-font-smoothing:antialiased;
+    position:relative;
   }
+
+  /* ---------- Realistic minimal sunlight glow (light mode only) ---------- */
+  #sunGlow{
+    position:fixed;inset:0;z-index:-2;pointer-events:none;overflow:hidden;
+  }
+  body.dark-mode #sunGlow{display:none;}
+  #sunGlow .sun-core{
+    position:absolute;top:-14%;right:8%;width:440px;height:440px;border-radius:50%;
+    background:radial-gradient(circle,
+      rgba(255,246,228,.95) 0%,
+      rgba(255,228,180,.55) 32%,
+      rgba(255,208,148,.2) 55%,
+      transparent 72%);
+    filter:blur(8px);
+    animation:sunPulseSoft 6s ease-in-out infinite;
+  }
+  #sunGlow .beam{
+    position:absolute;top:-25%;right:14%;width:640px;height:1300px;
+    background:linear-gradient(180deg, rgba(255,230,185,.28) 0%, transparent 68%);
+    transform-origin:top center;
+    filter:blur(22px);
+  }
+  #sunGlow .beam.b1{transform:rotate(16deg);opacity:.85;}
+  #sunGlow .beam.b2{transform:rotate(34deg);opacity:.5;width:520px;}
+  @keyframes sunPulseSoft{0%,100%{opacity:.92;}50%{opacity:1;}}
+
+  #leafLayer{
+    position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
+  }
+  body.dark-mode #leafLayer{display:none;}
+  .leaf-piece{
+    position:absolute;top:-40px;font-size:22px;opacity:.55;
+    animation-name:leafFall,leafSway;
+    animation-timing-function:linear,ease-in-out;
+    animation-iteration-count:infinite,infinite;
+    filter:drop-shadow(0 2px 3px rgba(90,50,0,.15));
+  }
+  @keyframes leafFall{from{transform:translateY(-40px) rotate(0deg);}to{transform:translateY(110vh) rotate(360deg);}}
+  @keyframes leafSway{0%,100%{margin-left:0;}50%{margin-left:60px;}}
 
   /* ---------- Header: dark floating capsule navbar ---------- */
   header{
@@ -630,6 +667,14 @@
 </style>
 </head>
 <body>
+
+<div id="sunRays"></div>
+<div id="sunGlow">
+  <div class="sun-core"></div>
+  <div class="beam b1"></div>
+  <div class="beam b2"></div>
+</div>
+<div id="leafLayer"></div>
 
 <header>
   <div class="brand">
@@ -1242,6 +1287,24 @@ document.getElementById("pauseBtn").addEventListener("click", ()=>{
   document.getElementById("pauseBtn").textContent = paused ? "▶ เล่นต่อ" : "⏸ หยุดเลื่อน";
   resetRotateTimer();
 });
+
+const leafLayer = document.getElementById("leafLayer");
+const LEAF_EMOJI = ["🍃","🍂","🌿"];
+function spawnLeaves(){
+  for(let i=0;i<14;i++){
+    const piece = document.createElement("div");
+    piece.className = "leaf-piece";
+    piece.textContent = LEAF_EMOJI[i % LEAF_EMOJI.length];
+    piece.style.left = (Math.random()*100) + "vw";
+    piece.style.fontSize = (16 + Math.random()*14) + "px";
+    const fallDuration = 12 + Math.random()*10;
+    const swayDuration = 3 + Math.random()*3;
+    piece.style.animationDuration = `${fallDuration}s, ${swayDuration}s`;
+    piece.style.animationDelay = `${Math.random()*14}s, ${Math.random()*3}s`;
+    leafLayer.appendChild(piece);
+  }
+}
+spawnLeaves();
 
 const darkModeToggle = document.getElementById("darkModeToggle");
 const confettiLayer = document.getElementById("confettiLayer");
