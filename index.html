@@ -922,8 +922,10 @@ async function loadAllSites(){
     }
   }
 
-  // ---- Sigen: per-device online/offline status (from /system/{id}/devices, same field
-  // Sigen Cloud's own "Devices" tab uses) — gives specific device-level detail without MQTT ----
+  // ---- Sigen: per-device raw status (from /system/{id}/devices, same field
+  // Sigen Cloud's own "Devices" tab uses) — kept as-is for reference in the detail modal.
+  // NOT used to drive alert state: exact raw string values from this field haven't been
+  // confirmed yet, so we show it verbatim rather than guessing "online"/"offline" from it. ----
   const sigenDeviceMap = new Map();
   for(const r of sigenDeviceList){
     if(!r.systemId) continue;
@@ -931,7 +933,7 @@ async function loadAllSites(){
     sigenDeviceMap.get(r.systemId).push({
       type: r.deviceType || "Device",
       sn: r.serialNumber || "",
-      connected: (r.status || "").toLowerCase() === "online"
+      rawStatus: r.status || ""
     });
   }
 
@@ -1092,29 +1094,26 @@ function evaluate(site){
   // (already fetched into Sigen_Station_List — same categories shown in Sigen Cloud's
   // own UI tabs: Normal / Faulty / External Issue / Offline / Power-off / Standby).
   // This needs no MQTT connection at all, unlike device-level alarms.
+  // NOTE: per-device connectivity (sigenDeviceStatusList) is intentionally NOT used to
+  // drive status here — we haven't confirmed the exact raw string Sigen's API returns
+  // for a device's "status" field, and guessing caused false "disconnected" positives
+  // on systems Sigen itself reports as Normal. It's still shown for reference in the
+  // detail modal, just not used for alerting until confirmed.
   if(site.vendor === "Sigen" && site.sigenStatus){
     const norm = site.sigenStatus.toLowerCase().replace(/[\s-]/g, "");
-    const devList = site.sigenDeviceStatusList || [];
-    const offlineDevs = devList.filter(d => !d.connected).map(d => d.type);
-    const devDetail = offlineDevs.length ? ` (${offlineDevs.join(", ")} ขาดการเชื่อมต่อ)` : "";
-
     if(norm === "faulty"){
-      return {state:"fault", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}${devDetail}`};
+      return {state:"fault", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}`};
     }
     if(norm === "offline"){
-      return {state:"offline", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}${devDetail}`};
+      return {state:"offline", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}`};
     }
     if(norm === "externalissue"){
-      return {state:"warning", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}${devDetail}`};
+      return {state:"warning", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}`};
     }
     if(norm === "poweroff"){
       return {state:"offline", reason:`ระบบถูกปิด (${site.sigenStatus})`};
     }
-    // "Normal" / "Standby": overall status looks fine, but check per-device connectivity —
-    // a device can drop out while the system-level status hasn't flipped yet.
-    if(offlineDevs.length){
-      return {state:"partial", reason:`${offlineDevs.join(", ")} ขาดการเชื่อมต่อ (${devList.length - offlineDevs.length}/${devList.length} เชื่อมต่ออยู่)`};
-    }
+    // "Normal" / "Standby" fall through to the normal ok checks below
   }
 
   const raw = (site.devices ? site.devices.map(d=>d.status).join(" ") : (site.metrics.status||"")).toLowerCase();
@@ -1542,7 +1541,7 @@ function buildDetailBody(site){
         const statusEntry = (site.sigenDeviceStatusList||[]).find(x => x.type === d.type);
         html += `<div class="device-card">
           <div class="dname">${d.type}${d.status ? " · " + d.status : ""}</div>
-          ${statusEntry ? `<div class="drow"><span>สถานะการเชื่อมต่อ</span><b style="color:${statusEntry.connected ? '#186b38' : '#a8281c'}">${statusEntry.connected ? 'เชื่อมต่ออยู่' : 'ขาดการเชื่อมต่อ'}</b></div>` : ""}
+          ${statusEntry && statusEntry.rawStatus ? `<div class="drow"><span>สถานะ (จาก Sigen)</span><b>${statusEntry.rawStatus}</b></div>` : ""}
           ${d.activePower!==null?`<div class="drow"><span>กำลังไฟ</span><b>${fmtNum(d.activePower,2)} kW</b></div>`:""}
           ${d.pvPower!==null?`<div class="drow"><span>กำลังไฟจากแผง</span><b>${fmtNum(d.pvPower,2)} kW</b></div>`:""}
           ${d.temp!==null?`<div class="drow"><span>อุณหภูมิ</span><b>${fmtNum(d.temp,1)} °C</b></div>`:""}
