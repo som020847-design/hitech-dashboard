@@ -810,7 +810,7 @@ async function loadAllSites(){
   const [
     huaweiLatest, huaweiStations, huaweiAlarmsRaw,
     deyeAll, deyeStations, deyeDeviceStatus, deyeAlertsRaw, deyeDailyEnergy,
-    sigenInvAll, sigenRealtimeAll, sigenStations
+    sigenInvAll, sigenRealtimeAll, sigenStations, sigenDeviceList
   ] = await Promise.all([
     fetchSheet("Latest_Data"),
     fetchSheet("Station_List").catch(()=>[]),
@@ -822,14 +822,15 @@ async function loadAllSites(){
     fetchSheet("Deye_Daily_Energy").catch(()=>[]),
     fetchSheet("Sigen_Inverter_Data"),
     fetchSheet("Sigen_Realtime_Data").catch(()=>[]),
-    fetchSheet("Sigen_Station_List").catch(()=>[])
+    fetchSheet("Sigen_Station_List").catch(()=>[]),
+    fetchSheet("Sigen_Device_List").catch(()=>[])
   ]);
 
   // ---- capacity lookup maps ----
   const huaweiCapMap = new Map(huaweiStations.map(r => [r.stationCode, num(r["capacity (kW)"])]));
   const deyeCapMap = new Map(deyeStations.map(r => [r.stationId, num(r.capacity_kW)]));
   const sigenCapMap = new Map(sigenStations.map(r => [r.systemId, {
-    pv: num(r.pv_capacity_kW), battery: num(r.battery_capacity)
+    pv: num(r.pv_capacity_kW), battery: num(r.battery_capacity_kWh), status: r.status || ""
   }]));
 
   // ---- Huawei active alarms (latest polling batch, full detail) ----
@@ -919,6 +920,19 @@ async function loadAllSites(){
           });
         });
     }
+  }
+
+  // ---- Sigen: per-device online/offline status (from /system/{id}/devices, same field
+  // Sigen Cloud's own "Devices" tab uses) — gives specific device-level detail without MQTT ----
+  const sigenDeviceMap = new Map();
+  for(const r of sigenDeviceList){
+    if(!r.systemId) continue;
+    if(!sigenDeviceMap.has(r.systemId)) sigenDeviceMap.set(r.systemId, []);
+    sigenDeviceMap.get(r.systemId).push({
+      type: r.deviceType || "Device",
+      sn: r.serialNumber || "",
+      connected: (r.status || "").toLowerCase() === "online"
+    });
   }
 
   // ---- Sigen: history of total PV power per system (sum of devices at each timestamp) ----
@@ -1041,6 +1055,8 @@ async function loadAllSites(){
     }
     const cap = sigenCapMap.get(key) || {};
     s.batteryCapacityKw = cap.battery ?? null;
+    s.sigenStatus = cap.status || "";
+    s.sigenDeviceStatusList = sigenDeviceMap.get(key) || [];
     sites.push(s);
   }
 
@@ -1070,6 +1086,35 @@ function evaluate(site){
       return {state: isOfflineType ? "offline" : "fault", reason:names};
     }
     return {state:"ok", reason:""};
+  }
+
+  // Sigen: use the system-level status field from Sigen's own /system endpoint
+  // (already fetched into Sigen_Station_List — same categories shown in Sigen Cloud's
+  // own UI tabs: Normal / Faulty / External Issue / Offline / Power-off / Standby).
+  // This needs no MQTT connection at all, unlike device-level alarms.
+  if(site.vendor === "Sigen" && site.sigenStatus){
+    const norm = site.sigenStatus.toLowerCase().replace(/[\s-]/g, "");
+    const devList = site.sigenDeviceStatusList || [];
+    const offlineDevs = devList.filter(d => !d.connected).map(d => d.type);
+    const devDetail = offlineDevs.length ? ` (${offlineDevs.join(", ")} ขาดการเชื่อมต่อ)` : "";
+
+    if(norm === "faulty"){
+      return {state:"fault", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}${devDetail}`};
+    }
+    if(norm === "offline"){
+      return {state:"offline", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}${devDetail}`};
+    }
+    if(norm === "externalissue"){
+      return {state:"warning", reason:`Sigen รายงานสถานะ: ${site.sigenStatus}${devDetail}`};
+    }
+    if(norm === "poweroff"){
+      return {state:"offline", reason:`ระบบถูกปิด (${site.sigenStatus})`};
+    }
+    // "Normal" / "Standby": overall status looks fine, but check per-device connectivity —
+    // a device can drop out while the system-level status hasn't flipped yet.
+    if(offlineDevs.length){
+      return {state:"partial", reason:`${offlineDevs.join(", ")} ขาดการเชื่อมต่อ (${devList.length - offlineDevs.length}/${devList.length} เชื่อมต่ออยู่)`};
+    }
   }
 
   const raw = (site.devices ? site.devices.map(d=>d.status).join(" ") : (site.metrics.status||"")).toLowerCase();
@@ -1481,6 +1526,7 @@ function buildDetailBody(site){
     html += row("กำลังการผลิตติดตั้ง (PV)", fmtNum(site.capacityKw,2), "kW");
     html += row("ความจุแบตเตอรี่", fmtNum(site.batteryCapacityKw,2), "kWh");
     html += row("ประหยัดวันนี้ (โดยประมาณ)", fmtNum(m.savedCost,2), "บาท");
+    if(site.sigenStatus) html += row("สถานะจาก Sigen Cloud", site.sigenStatus, "");
     html += `</div>`;
 
     if(m.lifetimeCo2 !== null || m.lifetimeTree !== null){
@@ -1493,8 +1539,10 @@ function buildDetailBody(site){
     if(site.devices && site.devices.length){
       html += `<div class="modal-section-title">อุปกรณ์ในระบบ (${site.devices.length})</div>`;
       site.devices.forEach(d=>{
+        const statusEntry = (site.sigenDeviceStatusList||[]).find(x => x.type === d.type);
         html += `<div class="device-card">
           <div class="dname">${d.type}${d.status ? " · " + d.status : ""}</div>
+          ${statusEntry ? `<div class="drow"><span>สถานะการเชื่อมต่อ</span><b style="color:${statusEntry.connected ? '#186b38' : '#a8281c'}">${statusEntry.connected ? 'เชื่อมต่ออยู่' : 'ขาดการเชื่อมต่อ'}</b></div>` : ""}
           ${d.activePower!==null?`<div class="drow"><span>กำลังไฟ</span><b>${fmtNum(d.activePower,2)} kW</b></div>`:""}
           ${d.pvPower!==null?`<div class="drow"><span>กำลังไฟจากแผง</span><b>${fmtNum(d.pvPower,2)} kW</b></div>`:""}
           ${d.temp!==null?`<div class="drow"><span>อุณหภูมิ</span><b>${fmtNum(d.temp,1)} °C</b></div>`:""}
@@ -1507,7 +1555,7 @@ function buildDetailBody(site){
     if(ev.state === "issue" || ev.state === "fault"){
       html += `<div class="modal-section-title">สถานะที่ตรวจพบ</div><div class="alarm-card"><div class="aname">${ev.reason}</div></div>`;
     }
-    html += `<div class="heuristic-note">⚠️ Sigenergy alarm ต้องใช้ MQTT subscription แบบ real-time ซึ่งยังไม่ได้เชื่อมต่อ — ตอนนี้ยังไม่มีการตรวจจับ fault อัตโนมัติสำหรับ Sigen จนกว่าจะเชื่อมต่อ MQTT<br>ℹ️ "ประหยัดวันนี้" คำนวณจากผลผลิตรวมทั้งหมด x 4.5 บาท/kWh (ไม่ได้แยกว่าใช้เองเท่าไหร่ ขายเข้าระบบเท่าไหร่ เพราะ Sigen API ไม่ได้แยกให้)</div>`;
+    html += `<div class="heuristic-note">ℹ️ สถานะ (ปกติ/ผิดพลาด/ออฟไลน์) มาจากข้อมูลจริงของ Sigen (ฟิลด์ status จาก /system endpoint เดียวกับที่ Sigen Cloud ใช้แสดงในหน้า System ของเว็บเขาเอง) รวมถึงสถานะการเชื่อมต่อรายอุปกรณ์จาก /devices endpoint ด้วย<br>⚠️ รายละเอียด alarm เจาะจง (เช่น ชื่อ error โค้ด สาเหตุ) ยังต้องรอเชื่อมต่อ MQTT subscription แบบ real-time ถึงจะดึงมาได้ — ยืนยันจากเอกสาร Sigen ว่า alarm data มีให้ผ่าน MQTT เท่านั้น ไม่มี REST endpoint ให้ poll<br>ℹ️ "ประหยัดวันนี้" คำนวณจากผลผลิตรวมทั้งหมด x 4.5 บาท/kWh (ไม่ได้แยกว่าใช้เองเท่าไหร่ ขายเข้าระบบเท่าไหร่ เพราะ Sigen API ไม่ได้แยกให้)</div>`;
   }
   return html;
 }
