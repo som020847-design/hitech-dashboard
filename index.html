@@ -712,7 +712,7 @@
     <div>ไซต์ทั้งหมด <b id="totSites">0</b></div>
     <div>กำลังผลิตรวม <b id="totPower">0</b> kW</div>
     <div>ต้องตรวจสอบ <b id="totIssue">0</b></div>
-    <div>ข้อมูลล่าช้า <b id="totStale">0</b></div>
+    <div>ออฟไลน์ <b id="totStale">0</b></div>
     <div>อัปเดตล่าสุด <b id="totRefresh">-</b></div>
   </div>
   <div class="dots" id="dots"></div>
@@ -737,7 +737,6 @@ const MODAL_HERO_IMG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDA
 const PAGE_SIZE = 10;
 const ROTATE_MS = 30000;
 const DATA_REFRESH_MS = 5 * 60000;
-const STALE_MIN = 35;
 const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 18;
 
@@ -1069,16 +1068,10 @@ async function loadAllSites(){
    ตัดสิน "ปัญหา"
    ============================================================ */
 
-// states: "ok" | "fault" (confirmed device/vendor fault) | "offline" (no/stale data or comms alarm) | "partial" (some devices disconnected) | "warning" (non-critical alert)
+// states: "ok" | "fault" (confirmed device/vendor fault) | "offline" (real vendor-reported disconnect/no data) | "partial" (some devices disconnected) | "warning" (non-critical alert)
 function evaluate(site){
-  const now = new Date();
-
   if(!site.lastUpdated){
     return {state:"offline", reason:"ไม่มีข้อมูล"};
-  }
-  const ageMin = (now - site.lastUpdated) / 60000;
-  if(ageMin > STALE_MIN){
-    return {state:"offline", reason:`ข้อมูลล่าช้า ${Math.round(ageMin)} นาที`};
   }
 
   if(site.vendor === "Huawei"){
@@ -1688,8 +1681,35 @@ async function refreshData(){
   }
 }
 
-refreshData();
-setInterval(refreshData, DATA_REFRESH_MS);
+let lastRefreshAt = 0;
+async function refreshDataTracked(){
+  await refreshData();
+  lastRefreshAt = Date.now();
+}
+
+refreshDataTracked();
+setInterval(refreshDataTracked, DATA_REFRESH_MS);
+
+// ---------------------------------------------------------
+// FIX: browsers (especially Chrome) throttle setInterval on background/
+// unfocused tabs, so a TV dashboard left open for hours can silently stop
+// refreshing on schedule even though the underlying Google Sheet is fine.
+// Two safeguards:
+//   1. When the tab becomes visible again, force an immediate refresh if
+//      it's been longer than DATA_REFRESH_MS since the last successful one.
+//   2. A lightweight watchdog timer (runs every 20s, cheap no-op if not due)
+//      double-checks elapsed real time rather than trusting setInterval alone.
+// ---------------------------------------------------------
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "visible" && Date.now() - lastRefreshAt > DATA_REFRESH_MS){
+    refreshDataTracked();
+  }
+});
+setInterval(()=>{
+  if(Date.now() - lastRefreshAt > DATA_REFRESH_MS){
+    refreshDataTracked();
+  }
+}, 20000);
 
 let resizeTimer;
 window.addEventListener("resize", ()=>{
