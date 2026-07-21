@@ -1266,14 +1266,14 @@ function buildDots(){
 function renderRibbon(){
   const ribbon = document.getElementById("ribbon");
   const track = document.getElementById("ribbonTrack");
-  const issues = allSites.map(s=>({site:s, ev:evaluate(s)})).filter(x=>x.ev.state==="fault" || x.ev.state==="issue" || x.ev.state==="partial" || x.ev.state==="warning");
+  const issues = allSites.map(s=>({site:s, ev:evaluate(s)})).filter(x=>x.ev.state==="fault" || x.ev.state==="issue" || x.ev.state==="partial" || x.ev.state==="warning" || x.ev.state==="offline");
   if(!issues.length){ ribbon.classList.remove("show"); return; }
   ribbon.classList.add("show");
   track.innerHTML = "";
   const doubled = [...issues, ...issues];
   doubled.forEach(x=>{
     const span = document.createElement("span");
-    const tag = x.ev.state === "fault" ? "ผิดพลาด" : x.ev.state === "partial" ? "เชื่อมต่อไม่ครบ" : x.ev.state === "warning" ? "แจ้งเตือน" : "ต้องตรวจสอบ";
+    const tag = x.ev.state === "fault" ? "ผิดพลาด" : x.ev.state === "partial" ? "เชื่อมต่อไม่ครบ" : x.ev.state === "warning" ? "แจ้งเตือน" : x.ev.state === "offline" ? "ออฟไลน์" : "ต้องตรวจสอบ";
     span.textContent = `${x.site.name} [${tag}] — ${x.ev.reason}`;
     span.addEventListener("click", ()=> openDetail(x.site));
     track.appendChild(span);
